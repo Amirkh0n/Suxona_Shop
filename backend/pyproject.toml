@@ -1,0 +1,46 @@
+[project]
+name = "suxonashop-backend"
+version = "0.1.0"
+description = "SuxonaShop Django REST backend"
+readme = "../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.34",
+    "django>=5.0,<6.0",
+    "django-filter>=24.0",
+    "django-storages>=1.14",
+    "djangorestframework>=3.15",
+    "djangorestframework-simplejwt>=5.3",
+    "gunicorn>=22.0",
+    "psycopg[binary]>=3.2",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.6",
+    "factory-boy>=3.3",
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "ruff>=0.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests", "apps"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["apps", "config", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]

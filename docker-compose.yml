@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    command: uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    env_file:
+      - .env.example
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app/backend
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: suxonashop
+      POSTGRES_USER: suxonashop
+      POSTGRES_PASSWORD: suxonashop
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
