@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -11,11 +12,21 @@ from apps.accounts.serializers import (
 from apps.accounts.services import LinkTelegramService
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsAuthenticatedUser
+from apps.common.schema import DetailSerializer
 
 
+@extend_schema(tags=["Users"])
 class TelegramLinkView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="Link Telegram account",
+        request=TelegramLinkSerializer,
+        responses={
+            200: TelegramAccountSerializer,
+            400: OpenApiResponse(DetailSerializer, "Service error."),
+        },
+    )
     def post(self, request: Request) -> Response:
         serializer = TelegramLinkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -34,9 +45,17 @@ class TelegramLinkView(APIView):
         )
 
 
+@extend_schema(tags=["Users"])
 class TelegramMeView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="Get my Telegram account",
+        responses={
+            200: TelegramAccountSerializer,
+            404: OpenApiResponse(DetailSerializer, "Not linked."),
+        },
+    )
     def get(self, request: Request) -> Response:
         account = (
             TelegramAccount.objects.filter(user=request.user).first()

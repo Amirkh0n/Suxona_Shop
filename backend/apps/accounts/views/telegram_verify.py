@@ -1,4 +1,5 @@
 from django.conf import settings
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -13,10 +14,12 @@ from apps.accounts.exceptions import (
 from apps.accounts.serializers import TelegramVerifySerializer
 from apps.accounts.services import VerifyTelegramRegistrationService
 from apps.common.exceptions import ServiceError
+from apps.common.schema import DetailSerializer, TelegramVerifyResponseSerializer
 
 _SECRET_HEADER = "X-Telegram-Bot-Api-Secret-Token"
 
 
+@extend_schema(tags=["Auth"])
 class TelegramVerifyView(APIView):
     """Intake endpoint for the Telegram bot to complete registration
     verification. Secured by a shared secret header so only the configured
@@ -25,6 +28,22 @@ class TelegramVerifyView(APIView):
     permission_classes = [AllowAny]
     authentication_classes: list = []
 
+    @extend_schema(
+        summary="Complete Telegram verification",
+        description=(
+            "Called by the Telegram bot backend. Validates the verification "
+            "token, links the Telegram account, and activates the user."
+        ),
+        request=TelegramVerifySerializer,
+        responses={
+            200: TelegramVerifyResponseSerializer,
+            403: OpenApiResponse(DetailSerializer, "Forbidden / not configured."),
+            404: OpenApiResponse(DetailSerializer, "Invalid token."),
+            409: OpenApiResponse(DetailSerializer, "Telegram already linked."),
+            410: OpenApiResponse(DetailSerializer, "Token expired or consumed."),
+            503: OpenApiResponse(DetailSerializer, "Verification not configured."),
+        },
+    )
     def post(self, request: Request) -> Response:
         expected = settings.TELEGRAM_WEBHOOK_SECRET
         # Fail closed: a missing/empty secret means the endpoint is not

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -5,6 +6,7 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsAdmin, IsAuthenticatedUser
+from apps.common.schema import DetailSerializer
 from apps.stores.selectors import StoreApplicationSelector
 from apps.stores.serializers import (
     StoreApplicationCreateSerializer,
@@ -20,9 +22,18 @@ from apps.stores.services import (
 from apps.stores.views.base import PaginatedAPIView
 
 
+@extend_schema(tags=["Stores"])
 class StoreApplicationCreateView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="Apply to open a store",
+        request=StoreApplicationCreateSerializer,
+        responses={
+            201: StoreApplicationDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+        },
+    )
     def post(self, request: Request) -> Response:
         serializer = StoreApplicationCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -41,9 +52,15 @@ class StoreApplicationCreateView(APIView):
         )
 
 
+@extend_schema(tags=["Admin"])
 class PendingStoreApplicationListView(PaginatedAPIView):
     permission_classes = [IsAdmin]
 
+    @extend_schema(
+        operation_id="admin_store_applications_list",
+        summary="List pending store applications (admin)",
+        responses={200: StoreApplicationListSerializer(many=True)},
+    )
     def get(self, request: Request) -> Response:
         applications = StoreApplicationSelector.get_pending_applications()
         return self.paginate(
@@ -53,9 +70,19 @@ class PendingStoreApplicationListView(PaginatedAPIView):
         )
 
 
+@extend_schema(tags=["Admin"])
 class ApproveStoreApplicationView(APIView):
     permission_classes = [IsAdmin]
 
+    @extend_schema(
+        summary="Approve a store application (admin)",
+        request=None,
+        responses={
+            200: StoreApplicationDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Service error."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def post(self, request: Request, application_id: int) -> Response:
         application = StoreApplicationSelector.get_application_by_id(application_id)
         if application is None:
@@ -76,9 +103,19 @@ class ApproveStoreApplicationView(APIView):
         )
 
 
+@extend_schema(tags=["Admin"])
 class RejectStoreApplicationView(APIView):
     permission_classes = [IsAdmin]
 
+    @extend_schema(
+        summary="Reject a store application (admin)",
+        request=StoreApplicationRejectSerializer,
+        responses={
+            200: StoreApplicationDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Service error."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def post(self, request: Request, application_id: int) -> Response:
         application = StoreApplicationSelector.get_application_by_id(application_id)
         if application is None:

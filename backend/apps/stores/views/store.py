@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -7,6 +8,7 @@ from rest_framework.views import APIView
 from apps.common.permissions import IsSeller
 from apps.stores.exceptions import NotStoreOwnerError, StoreNotFound
 from apps.common.exceptions import ServiceError
+from apps.common.schema import DetailSerializer
 from apps.stores.selectors import StoreSelector
 from apps.stores.serializers import (
     StoreDetailSerializer,
@@ -17,9 +19,18 @@ from apps.stores.services import UpdateStoreService
 from apps.stores.views.base import PaginatedAPIView
 
 
+@extend_schema(tags=["Stores"])
 class StoreListView(PaginatedAPIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        operation_id="stores_list",
+        summary="List active stores",
+        parameters=[
+            OpenApiParameter("search", str, description="Search by store name."),
+        ],
+        responses={200: StoreListSerializer(many=True)},
+    )
     def get(self, request: Request) -> Response:
         search = request.query_params.get("search")
         if search:
@@ -29,9 +40,18 @@ class StoreListView(PaginatedAPIView):
         return self.paginate(stores, StoreListSerializer, request)
 
 
+@extend_schema(tags=["Stores"])
 class StoreDetailView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        operation_id="stores_retrieve",
+        summary="Get a store",
+        responses={
+            200: StoreDetailSerializer,
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def get(self, request: Request, store_id: int) -> Response:
         store = StoreSelector.get_store_by_id(store_id)
         if store is None:
@@ -45,9 +65,17 @@ class StoreDetailView(APIView):
         )
 
 
+@extend_schema(tags=["Stores"])
 class MyStoreView(APIView):
     permission_classes = [IsSeller]
 
+    @extend_schema(
+        summary="Get my store",
+        responses={
+            200: StoreDetailSerializer,
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def get(self, request: Request) -> Response:
         store = StoreSelector.get_store_by_owner(request.user.id)
         if store is None:
@@ -60,6 +88,16 @@ class MyStoreView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Update my store",
+        request=StoreUpdateSerializer,
+        responses={
+            200: StoreDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+            403: OpenApiResponse(DetailSerializer, "Not the store owner."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def patch(self, request: Request) -> Response:
         store = StoreSelector.get_store_by_owner(request.user.id)
         if store is None:

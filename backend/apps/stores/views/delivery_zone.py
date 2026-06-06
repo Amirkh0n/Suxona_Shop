@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -6,6 +7,7 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsSeller, IsAuthenticatedUser
+from apps.common.schema import DetailSerializer
 from apps.stores.exceptions import (
     DeliveryZoneNotFound,
     NotStoreOwnerError,
@@ -25,9 +27,17 @@ from apps.stores.services import (
 )
 
 
+@extend_schema(tags=["Stores"])
 class StoreDeliveryZoneListView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="List a store's delivery zones",
+        responses={
+            200: DeliveryZoneListSerializer(many=True),
+            404: OpenApiResponse(DetailSerializer, "Store not found."),
+        },
+    )
     def get(self, request: Request, store_id: int) -> Response:
         if not StoreSelector.store_exists(store_id):
             return Response(
@@ -41,9 +51,20 @@ class StoreDeliveryZoneListView(APIView):
         )
 
 
+@extend_schema(tags=["Stores"])
 class DeliveryZoneCreateView(APIView):
     permission_classes = [IsSeller]
 
+    @extend_schema(
+        summary="Create a delivery zone",
+        request=DeliveryZoneCreateSerializer,
+        responses={
+            201: DeliveryZoneListSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+            403: OpenApiResponse(DetailSerializer, "Not the store owner."),
+            404: OpenApiResponse(DetailSerializer, "Store not found."),
+        },
+    )
     def post(self, request: Request) -> Response:
         store = getattr(request, "seller_store", None) or (
             StoreSelector.get_store_by_owner(request.user.id)
@@ -76,12 +97,23 @@ class DeliveryZoneCreateView(APIView):
         )
 
 
+@extend_schema(tags=["Stores"])
 class DeliveryZoneDetailView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
     def _get_zone_or_none(self, zone_id: int) -> DeliveryZone | None:
         return DeliveryZoneSelector.get_delivery_zone_by_id(zone_id)
 
+    @extend_schema(
+        summary="Update a delivery zone",
+        request=DeliveryZoneUpdateSerializer,
+        responses={
+            200: DeliveryZoneListSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+            403: OpenApiResponse(DetailSerializer, "Not the store owner."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def patch(self, request: Request, zone_id: int) -> Response:
         zone = self._get_zone_or_none(zone_id)
         if zone is None:
@@ -111,6 +143,14 @@ class DeliveryZoneDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Delete a delivery zone",
+        responses={
+            204: OpenApiResponse(description="Deleted."),
+            403: OpenApiResponse(DetailSerializer, "Not the store owner."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def delete(self, request: Request, zone_id: int) -> Response:
         zone = self._get_zone_or_none(zone_id)
         if zone is None:

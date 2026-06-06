@@ -1,0 +1,3411 @@
+openapi: 3.0.3
+info:
+  title: SuxonaShop API
+  version: 1.0.0
+  description: Marketplace API for SuxonaShop
+paths:
+  /api/v1/addresses:
+    get:
+      operationId: addresses_list
+      summary: List my addresses
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AddressList'
+          description: ''
+    post:
+      operationId: addresses_create
+      summary: Create an address
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddressCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AddressCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+  /api/v1/addresses/{address_id}:
+    get:
+      operationId: addresses_retrieve
+      summary: Get an address
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    patch:
+      operationId: addresses_partial_update
+      summary: Update an address
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAddressUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: addresses_destroy
+      summary: Delete an address
+      parameters:
+      - in: path
+        name: address_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/admin/store-applications:
+    get:
+      operationId: admin_store_applications_list
+      description: |-
+        APIView base that exposes a helper for paginating selector querysets
+        using the project-wide PageNumberPagination configuration.
+      summary: List pending store applications (admin)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStoreApplicationListList'
+          description: ''
+  /api/v1/admin/store-applications/{application_id}/approve:
+    post:
+      operationId: admin_store_applications_approve_create
+      summary: Approve a store application (admin)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreApplicationDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/admin/store-applications/{application_id}/reject:
+    post:
+      operationId: admin_store_applications_reject_create
+      summary: Reject a store application (admin)
+      parameters:
+      - in: path
+        name: application_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreApplicationReject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StoreApplicationReject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoreApplicationReject'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreApplicationDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/auth/login:
+    post:
+      operationId: auth_login_create
+      description: Authenticates a user by phone + password and returns a JWT pair.
+      summary: Obtain JWT tokens
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Login'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid credentials.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Account not verified.
+  /api/v1/auth/me:
+    get:
+      operationId: auth_me_retrieve
+      summary: Get current user
+      tags:
+      - Auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+          description: ''
+  /api/v1/auth/register:
+    post:
+      operationId: auth_register_create
+      description: Creates an inactive user and returns a Telegram deep link the user
+        must open to verify and activate their account.
+      summary: Register a new user
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+  /api/v1/auth/telegram/verify:
+    post:
+      operationId: auth_telegram_verify_create
+      description: Called by the Telegram bot backend. Validates the verification
+        token, links the Telegram account, and activates the user.
+      summary: Complete Telegram verification
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TelegramVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TelegramVerify'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramVerifyResponse'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Forbidden / not configured.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid token.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Telegram already linked.
+        '410':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Token expired or consumed.
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Verification not configured.
+  /api/v1/banners/:
+    get:
+      operationId: banners_list
+      summary: List active banners
+      tags:
+      - Banners
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BannerList'
+          description: ''
+    post:
+      operationId: banners_create
+      summary: Create a banner (admin)
+      tags:
+      - Banners
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BannerCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BannerCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BannerDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+  /api/v1/banners/{banner_id}:
+    get:
+      operationId: banners_retrieve
+      summary: Get a banner
+      parameters:
+      - in: path
+        name: banner_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Banners
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BannerDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    patch:
+      operationId: banners_partial_update
+      summary: Update a banner (admin)
+      parameters:
+      - in: path
+        name: banner_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Banners
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBannerUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBannerUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BannerDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: banners_destroy
+      summary: Delete a banner (admin)
+      parameters:
+      - in: path
+        name: banner_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Banners
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/cart:
+    get:
+      operationId: cart_retrieve
+      summary: Get my cart (grouped by store)
+      tags:
+      - Cart
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+          description: ''
+    delete:
+      operationId: cart_destroy
+      summary: Clear my cart
+      tags:
+      - Cart
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Cleared.
+  /api/v1/cart/items:
+    post:
+      operationId: cart_items_create
+      summary: Add an item to the cart
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+  /api/v1/cart/items/{item_id}:
+    patch:
+      operationId: cart_items_partial_update
+      summary: Update a cart item quantity
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the cart owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: cart_items_destroy
+      summary: Remove a cart item
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Cart
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Removed.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the cart owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/categories:
+    get:
+      operationId: categories_list
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: List active categories
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategoryList'
+          description: ''
+    post:
+      operationId: categories_create
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: Create a category (admin)
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Parent not found.
+  /api/v1/categories/{category_id}:
+    get:
+      operationId: categories_retrieve
+      summary: Get a category
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    patch:
+      operationId: categories_partial_update
+      summary: Update a category (admin)
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: categories_destroy
+      summary: Delete a category (admin)
+      parameters:
+      - in: path
+        name: category_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Has children or in use.
+  /api/v1/delivery-zones:
+    post:
+      operationId: delivery_zones_create
+      summary: Create a delivery zone
+      tags:
+      - Stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryZoneCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeliveryZoneCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeliveryZoneCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryZoneList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the store owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store not found.
+  /api/v1/delivery-zones/{zone_id}:
+    patch:
+      operationId: delivery_zones_partial_update
+      summary: Update a delivery zone
+      parameters:
+      - in: path
+        name: zone_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDeliveryZoneUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDeliveryZoneUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDeliveryZoneUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryZoneList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the store owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: delivery_zones_destroy
+      summary: Delete a delivery zone
+      parameters:
+      - in: path
+        name: zone_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the store owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/orders:
+    post:
+      operationId: orders_create
+      summary: Create an order from the store cart
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Address not owned.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store/address/zone not found.
+  /api/v1/orders/{order_id}:
+    get:
+      operationId: orders_retrieve
+      summary: Get an order
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/orders/{order_id}/accept:
+    post:
+      operationId: orders_accept_create
+      description: |-
+        Base for seller order state-transition actions.
+
+        Resolves the seller's store, scopes the order to that store (so a seller
+        can act only on their own store's orders), delegates to the service, and
+        returns the refreshed order.
+      summary: Accept an order (seller)
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store or order not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid status transition.
+  /api/v1/orders/{order_id}/cancel:
+    post:
+      operationId: orders_cancel_create
+      summary: Cancel an order
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the order owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Order not cancellable.
+  /api/v1/orders/{order_id}/complete:
+    post:
+      operationId: orders_complete_create
+      description: |-
+        Base for seller order state-transition actions.
+
+        Resolves the seller's store, scopes the order to that store (so a seller
+        can act only on their own store's orders), delegates to the service, and
+        returns the refreshed order.
+      summary: Complete an order (seller)
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store or order not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid status transition.
+  /api/v1/orders/{order_id}/delivering:
+    post:
+      operationId: orders_delivering_create
+      description: |-
+        Base for seller order state-transition actions.
+
+        Resolves the seller's store, scopes the order to that store (so a seller
+        can act only on their own store's orders), delegates to the service, and
+        returns the refreshed order.
+      summary: Mark an order as delivering (seller)
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store or order not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid status transition.
+  /api/v1/orders/{order_id}/reject:
+    post:
+      operationId: orders_reject_create
+      description: |-
+        Base for seller order state-transition actions.
+
+        Resolves the seller's store, scopes the order to that store (so a seller
+        can act only on their own store's orders), delegates to the service, and
+        returns the refreshed order.
+      summary: Reject an order (seller)
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderReject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderReject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderReject'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store or order not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid status transition.
+  /api/v1/orders/my:
+    get:
+      operationId: orders_my_list
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: List my orders
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderListList'
+          description: ''
+  /api/v1/orders/store:
+    get:
+      operationId: seller_orders_list
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: List my store's orders (seller)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by order status.
+      tags:
+      - Orders
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderListList'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store not found.
+  /api/v1/product-images/{image_id}:
+    delete:
+      operationId: product_images_destroy
+      summary: Delete a product image (store owner)
+      parameters:
+      - in: path
+        name: image_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Cannot delete last image.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the product owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Image not found.
+  /api/v1/products:
+    get:
+      operationId: products_list
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: List products
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: integer
+        description: Filter by category id.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by name/description.
+      - in: query
+        name: store
+        schema:
+          type: integer
+        description: Filter by store id.
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+    post:
+      operationId: products_create
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: Create a product (seller)
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or store inactive.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the product owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store or category not found.
+  /api/v1/products/{product_id}:
+    get:
+      operationId: products_retrieve
+      summary: Get a product
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    patch:
+      operationId: products_partial_update
+      summary: Update a product (store owner)
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the product owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: products_destroy
+      summary: Delete a product (store owner)
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the product owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/products/{product_id}/images:
+    get:
+      operationId: products_images_list
+      summary: List a product's images
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductImage'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Product not found.
+    post:
+      operationId: products_images_create
+      summary: Upload a product image (store owner)
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageUpload'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImageUpload'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductImage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or max images.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the product owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Product not found.
+  /api/v1/products/{product_id}/images/reorder:
+    post:
+      operationId: products_images_reorder_create
+      summary: Reorder product images (store owner)
+      parameters:
+      - in: path
+        name: product_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductImageReorder'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductImageReorder'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageReorder'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductImage'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Invalid image order.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the product owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Product not found.
+  /api/v1/products/my:
+    get:
+      operationId: products_my_list
+      description: |-
+        APIView base exposing a helper to paginate selector querysets using the
+        project-wide PageNumberPagination configuration.
+      summary: List my store's products (seller)
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Products
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store not found.
+  /api/v1/store-applications:
+    post:
+      operationId: store_applications_create
+      summary: Apply to open a store
+      tags:
+      - Stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StoreApplicationCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StoreApplicationCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoreApplicationCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreApplicationDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+  /api/v1/stores:
+    get:
+      operationId: stores_list
+      description: |-
+        APIView base that exposes a helper for paginating selector querysets
+        using the project-wide PageNumberPagination configuration.
+      summary: List active stores
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by store name.
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStoreListList'
+          description: ''
+  /api/v1/stores/{store_id}:
+    get:
+      operationId: stores_retrieve
+      summary: Get a store
+      parameters:
+      - in: path
+        name: store_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/stores/{store_id}/delivery-zones:
+    get:
+      operationId: stores_delivery_zones_list
+      summary: List a store's delivery zones
+      parameters:
+      - in: path
+        name: store_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryZoneList'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Store not found.
+  /api/v1/stores/my:
+    get:
+      operationId: stores_my_retrieve
+      summary: Get my store
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    patch:
+      operationId: stores_my_partial_update
+      summary: Update my store
+      tags:
+      - Stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStoreUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not the store owner.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+  /api/v1/telegram/link:
+    post:
+      operationId: telegram_link_create
+      summary: Link Telegram account
+      tags:
+      - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramLink'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TelegramLink'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TelegramLink'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramAccount'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Service error.
+  /api/v1/telegram/me:
+    get:
+      operationId: telegram_me_retrieve
+      summary: Get my Telegram account
+      tags:
+      - Users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramAccount'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not linked.
+  /api/v1/villages:
+    get:
+      operationId: villages_list
+      description: |-
+        APIView base that exposes a helper for paginating selector querysets
+        using the project-wide PageNumberPagination configuration.
+      summary: List active villages
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVillageList'
+          description: ''
+    post:
+      operationId: villages_create
+      description: |-
+        APIView base that exposes a helper for paginating selector querysets
+        using the project-wide PageNumberPagination configuration.
+      summary: Create a village (admin)
+      tags:
+      - Stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VillageCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VillageCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VillageCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Village'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+  /api/v1/villages/{village_id}:
+    get:
+      operationId: villages_retrieve
+      summary: Get a village
+      parameters:
+      - in: path
+        name: village_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Village'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    patch:
+      operationId: villages_partial_update
+      summary: Update a village (admin)
+      parameters:
+      - in: path
+        name: village_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVillageUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVillageUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVillageUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Village'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Validation or service error.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+    delete:
+      operationId: villages_destroy
+      summary: Delete a village (admin)
+      parameters:
+      - in: path
+        name: village_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - Stores
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Deleted.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: Village is in use.
+components:
+  schemas:
+    AddressCreate:
+      type: object
+      properties:
+        village_id:
+          type: integer
+          minimum: 1
+        street:
+          type: string
+          maxLength: 255
+        house:
+          type: string
+          maxLength: 100
+        landmark:
+          type: string
+          maxLength: 255
+        is_default:
+          type: boolean
+          default: false
+      required:
+      - house
+      - street
+      - village_id
+    AddressDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        village:
+          allOf:
+          - $ref: '#/components/schemas/Village'
+          readOnly: true
+        street:
+          type: string
+          readOnly: true
+        house:
+          type: string
+          readOnly: true
+        landmark:
+          type: string
+          readOnly: true
+        is_default:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - house
+      - id
+      - is_default
+      - landmark
+      - street
+      - updated_at
+      - village
+    AddressList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        village:
+          type: integer
+          readOnly: true
+        street:
+          type: string
+          readOnly: true
+        house:
+          type: string
+          readOnly: true
+        landmark:
+          type: string
+          readOnly: true
+        is_default:
+          type: boolean
+          readOnly: true
+      required:
+      - house
+      - id
+      - is_default
+      - landmark
+      - street
+      - village
+    BannerCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+        url:
+          type: string
+          format: uri
+        is_active:
+          type: boolean
+          default: true
+        sort_order:
+          type: integer
+          minimum: 0
+          default: 0
+      required:
+      - image
+      - title
+    BannerDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - image
+      - is_active
+      - sort_order
+      - title
+      - updated_at
+      - url
+    BannerList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          readOnly: true
+        url:
+          type: string
+          format: uri
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - image
+      - sort_order
+      - title
+      - url
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductList'
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - product
+      - quantity
+    CartItemCreate:
+      type: object
+      properties:
+        product_id:
+          type: integer
+          minimum: 1
+        quantity:
+          type: integer
+          minimum: 1
+      required:
+      - product_id
+      - quantity
+    CartResponse:
+      type: object
+      description: Cart grouped by store.
+      properties:
+        stores:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartStoreGroupResponse'
+      required:
+      - stores
+    CartStoreGroupResponse:
+      type: object
+      description: A single store group within the cart response.
+      properties:
+        store_id:
+          type: integer
+        store_name:
+          type: string
+      required:
+      - store_id
+      - store_name
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        parent:
+          type: integer
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          readOnly: true
+        icon:
+          type: string
+          format: uri
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - icon
+      - id
+      - is_active
+      - name
+      - parent
+    CategoryCreate:
+      type: object
+      properties:
+        parent_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        name:
+          type: string
+          maxLength: 255
+        icon:
+          type: string
+          format: uri
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - name
+    DeliveryZoneCreate:
+      type: object
+      properties:
+        village_id:
+          type: integer
+          minimum: 1
+        delivery_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - delivery_price
+      - village_id
+    DeliveryZoneList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        village:
+          allOf:
+          - $ref: '#/components/schemas/Village'
+          readOnly: true
+        delivery_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - delivery_price
+      - id
+      - is_active
+      - village
+    Detail:
+      type: object
+      description: 'Generic ``{"detail": "..."}`` message response.'
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    Login:
+      type: object
+      description: Validation-only serializer for login input.
+      properties:
+        phone:
+          type: string
+          maxLength: 20
+          pattern: ^\+?\d{9,15}$
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+      required:
+      - password
+      - phone
+    OrderCreate:
+      type: object
+      properties:
+        store_id:
+          type: integer
+          minimum: 1
+        address_id:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+      required:
+      - address_id
+      - store_id
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        customer:
+          allOf:
+          - $ref: '#/components/schemas/UserCompact'
+          readOnly: true
+        store:
+          allOf:
+          - $ref: '#/components/schemas/StoreList'
+          readOnly: true
+        address:
+          allOf:
+          - $ref: '#/components/schemas/AddressDetail'
+          readOnly: true
+        delivery_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - created_at
+      - customer
+      - delivery_price
+      - id
+      - items
+      - note
+      - status
+      - store
+      - subtotal
+      - total
+      - updated_at
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/ProductList'
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - price
+      - product
+      - quantity
+      - subtotal
+    OrderList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        store_id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        delivery_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - delivery_price
+      - id
+      - status
+      - store_id
+      - subtotal
+      - total
+    OrderReject:
+      type: object
+      properties:
+        reason:
+          type: string
+    OrderStatusEnum:
+      enum:
+      - PENDING
+      - ACCEPTED
+      - DELIVERING
+      - COMPLETED
+      - CANCELLED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `ACCEPTED` - Accepted
+        * `DELIVERING` - Delivering
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+        * `REJECTED` - Rejected
+    PaginatedCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    PaginatedOrderListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderList'
+    PaginatedProductListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+    PaginatedStoreApplicationListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoreApplicationList'
+    PaginatedStoreListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StoreList'
+    PaginatedVillageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Village'
+    PatchedAddressUpdate:
+      type: object
+      properties:
+        village_id:
+          type: integer
+          minimum: 1
+        street:
+          type: string
+          maxLength: 255
+        house:
+          type: string
+          maxLength: 100
+        landmark:
+          type: string
+          maxLength: 255
+        is_default:
+          type: boolean
+    PatchedBannerUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+        url:
+          type: string
+          format: uri
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          minimum: 0
+    PatchedCartItemUpdate:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+    PatchedCategoryUpdate:
+      type: object
+      properties:
+        parent_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        name:
+          type: string
+          maxLength: 255
+        icon:
+          type: string
+          format: uri
+        is_active:
+          type: boolean
+    PatchedDeliveryZoneUpdate:
+      type: object
+      properties:
+        delivery_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_active:
+          type: boolean
+    PatchedProductUpdate:
+      type: object
+      properties:
+        category_id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        stock:
+          type: integer
+          minimum: 0
+          nullable: true
+        status:
+          type: string
+          maxLength: 20
+    PatchedStoreUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        phone:
+          type: string
+          maxLength: 20
+        telegram_username:
+          type: string
+          maxLength: 255
+        logo:
+          type: string
+          format: uri
+        banner:
+          type: string
+          format: uri
+    PatchedVillageUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        district:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+    ProductCreate:
+      type: object
+      properties:
+        category_id:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        stock:
+          type: integer
+          minimum: 0
+          nullable: true
+      required:
+      - category_id
+      - name
+      - price
+    ProductDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        store:
+          allOf:
+          - $ref: '#/components/schemas/StoreList'
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        stock:
+          type: integer
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ProductStatusEnum'
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category
+      - created_at
+      - description
+      - id
+      - images
+      - name
+      - price
+      - status
+      - stock
+      - store
+      - updated_at
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          readOnly: true
+        is_primary:
+          type: boolean
+          readOnly: true
+        sort_order:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - image
+      - is_primary
+      - sort_order
+    ProductImageReorder:
+      type: object
+      properties:
+        images:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+      required:
+      - images
+    ProductImageUpload:
+      type: object
+      properties:
+        image:
+          type: string
+          format: uri
+        is_primary:
+          type: boolean
+          default: false
+        sort_order:
+          type: integer
+          minimum: 0
+          default: 0
+      required:
+      - image
+    ProductList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        stock:
+          type: integer
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ProductStatusEnum'
+          readOnly: true
+        store_id:
+          type: integer
+          readOnly: true
+        category_id:
+          type: integer
+          readOnly: true
+        primary_image:
+          allOf:
+          - $ref: '#/components/schemas/ProductImage'
+          nullable: true
+          readOnly: true
+      required:
+      - category_id
+      - id
+      - name
+      - price
+      - primary_image
+      - status
+      - stock
+      - store_id
+    ProductStatusEnum:
+      enum:
+      - DRAFT
+      - ACTIVE
+      - OUT_OF_STOCK
+      - HIDDEN
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `ACTIVE` - Active
+        * `OUT_OF_STOCK` - Out of stock
+        * `HIDDEN` - Hidden
+    Register:
+      type: object
+      description: Validation-only serializer for user registration input.
+      properties:
+        phone:
+          type: string
+          maxLength: 20
+          pattern: ^\+?\d{9,15}$
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+          minLength: 8
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+      required:
+      - first_name
+      - password
+      - phone
+    RegisterResponse:
+      type: object
+      description: Response body for successful registration.
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        is_active:
+          type: boolean
+        telegram_deeplink:
+          type: string
+      required:
+      - id
+      - is_active
+      - phone
+      - telegram_deeplink
+    StoreApplicationCreate:
+      type: object
+      properties:
+        store_name:
+          type: string
+          maxLength: 255
+        phone:
+          type: string
+          maxLength: 20
+      required:
+      - phone
+      - store_name
+    StoreApplicationDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/UserCompact'
+          readOnly: true
+        store_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StoreApplicationStatusEnum'
+          readOnly: true
+        admin_note:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - admin_note
+      - created_at
+      - id
+      - owner
+      - phone
+      - status
+      - store_name
+      - updated_at
+    StoreApplicationList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        store_name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StoreApplicationStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - phone
+      - status
+      - store_name
+    StoreApplicationReject:
+      type: object
+      properties:
+        admin_note:
+          type: string
+    StoreApplicationStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+    StoreDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/UserCompact'
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        logo:
+          type: string
+          format: uri
+          readOnly: true
+        banner:
+          type: string
+          format: uri
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        telegram_username:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StoreStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - banner
+      - created_at
+      - description
+      - id
+      - logo
+      - name
+      - owner
+      - phone
+      - status
+      - telegram_username
+      - updated_at
+    StoreList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        logo:
+          type: string
+          format: uri
+          readOnly: true
+        banner:
+          type: string
+          format: uri
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StoreStatusEnum'
+          readOnly: true
+      required:
+      - banner
+      - id
+      - logo
+      - name
+      - status
+    StoreStatusEnum:
+      enum:
+      - PENDING
+      - ACTIVE
+      - SUSPENDED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `ACTIVE` - Active
+        * `SUSPENDED` - Suspended
+        * `REJECTED` - Rejected
+    TelegramAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        telegram_id:
+          type: string
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        linked_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - linked_at
+      - telegram_id
+      - username
+    TelegramLink:
+      type: object
+      properties:
+        telegram_id:
+          type: string
+          maxLength: 64
+        username:
+          type: string
+          maxLength: 255
+      required:
+      - telegram_id
+    TelegramVerify:
+      type: object
+      description: Validation-only serializer for the Telegram verification intake.
+      properties:
+        token:
+          type: string
+          maxLength: 64
+        telegram_id:
+          type: string
+          maxLength: 64
+        telegram_username:
+          type: string
+          maxLength: 255
+      required:
+      - telegram_id
+      - token
+    TelegramVerifyResponse:
+      type: object
+      description: Response body for a successful Telegram verification.
+      properties:
+        id:
+          type: integer
+        phone:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - id
+      - is_active
+      - phone
+    TokenPair:
+      type: object
+      description: JWT access/refresh token pair returned on login.
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    UserCompact:
+      type: object
+      description: Lightweight user representation for nesting in other read payloads.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+      required:
+      - first_name
+      - id
+      - phone
+    UserDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - first_name
+      - id
+      - is_active
+      - last_name
+      - phone
+    Village:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        district:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - district
+      - id
+      - is_active
+      - name
+    VillageCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        district:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - district
+      - name
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

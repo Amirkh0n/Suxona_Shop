@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
@@ -7,6 +8,7 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsStoreOwner
+from apps.common.schema import DetailSerializer
 from apps.products.exceptions import (
     InvalidImageOrderError,
     MaxImagesError,
@@ -28,6 +30,7 @@ from apps.products.services import (
 )
 
 
+@extend_schema(tags=["Products"])
 class ProductImageListUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -36,6 +39,13 @@ class ProductImageListUploadView(APIView):
             return [IsStoreOwner()]
         return [AllowAny()]
 
+    @extend_schema(
+        summary="List a product's images",
+        responses={
+            200: ProductImageSerializer(many=True),
+            404: OpenApiResponse(DetailSerializer, "Product not found."),
+        },
+    )
     def get(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
         if product is None:
@@ -49,6 +59,16 @@ class ProductImageListUploadView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Upload a product image (store owner)",
+        request=ProductImageUploadSerializer,
+        responses={
+            201: ProductImageSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or max images."),
+            403: OpenApiResponse(DetailSerializer, "Not the product owner."),
+            404: OpenApiResponse(DetailSerializer, "Product not found."),
+        },
+    )
     def post(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
         if product is None:
@@ -82,9 +102,20 @@ class ProductImageListUploadView(APIView):
         )
 
 
+@extend_schema(tags=["Products"])
 class ProductImageReorderView(APIView):
     permission_classes = [IsStoreOwner]
 
+    @extend_schema(
+        summary="Reorder product images (store owner)",
+        request=ProductImageReorderSerializer,
+        responses={
+            200: ProductImageSerializer(many=True),
+            400: OpenApiResponse(DetailSerializer, "Invalid image order."),
+            403: OpenApiResponse(DetailSerializer, "Not the product owner."),
+            404: OpenApiResponse(DetailSerializer, "Product not found."),
+        },
+    )
     def post(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
         if product is None:
@@ -118,9 +149,19 @@ class ProductImageReorderView(APIView):
         )
 
 
+@extend_schema(tags=["Products"])
 class ProductImageDeleteView(APIView):
     permission_classes = [IsStoreOwner]
 
+    @extend_schema(
+        summary="Delete a product image (store owner)",
+        responses={
+            204: OpenApiResponse(description="Deleted."),
+            400: OpenApiResponse(DetailSerializer, "Cannot delete last image."),
+            403: OpenApiResponse(DetailSerializer, "Not the product owner."),
+            404: OpenApiResponse(DetailSerializer, "Image not found."),
+        },
+    )
     def delete(self, request: Request, image_id: int) -> Response:
         image = ProductImageSelector.get_product_image_by_id(image_id)
         if image is None:

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -5,6 +6,7 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsSeller
+from apps.common.schema import DetailSerializer
 from apps.orders.exceptions import InvalidOrderStatusError, OrderNotFound
 from apps.orders.selectors import OrderSelector
 from apps.orders.serializers import (
@@ -21,10 +23,28 @@ from apps.orders.services import (
 from apps.orders.views.base import PaginatedAPIView
 from apps.stores.selectors import StoreSelector
 
+_ACTION_RESPONSES = {
+    200: OrderDetailSerializer,
+    404: OpenApiResponse(DetailSerializer, "Store or order not found."),
+    409: OpenApiResponse(DetailSerializer, "Invalid status transition."),
+}
 
+
+@extend_schema(tags=["Orders"])
 class SellerOrderListView(PaginatedAPIView):
     permission_classes = [IsSeller]
 
+    @extend_schema(
+        operation_id="seller_orders_list",
+        summary="List my store's orders (seller)",
+        parameters=[
+            OpenApiParameter("status", str, description="Filter by order status."),
+        ],
+        responses={
+            200: OrderListSerializer(many=True),
+            404: OpenApiResponse(DetailSerializer, "Store not found."),
+        },
+    )
     def get(self, request: Request) -> Response:
         store = getattr(request, "seller_store", None) or (
             StoreSelector.get_store_by_owner(request.user.id)
@@ -91,18 +111,42 @@ class _SellerOrderActionView(APIView):
         )
 
 
+@extend_schema(
+    tags=["Orders"],
+    summary="Accept an order (seller)",
+    request=None,
+    responses=_ACTION_RESPONSES,
+)
 class AcceptOrderView(_SellerOrderActionView):
     service = AcceptOrderService
 
 
+@extend_schema(
+    tags=["Orders"],
+    summary="Mark an order as delivering (seller)",
+    request=None,
+    responses=_ACTION_RESPONSES,
+)
 class MarkDeliveringOrderView(_SellerOrderActionView):
     service = MarkDeliveringService
 
 
+@extend_schema(
+    tags=["Orders"],
+    summary="Complete an order (seller)",
+    request=None,
+    responses=_ACTION_RESPONSES,
+)
 class CompleteOrderView(_SellerOrderActionView):
     service = CompleteOrderService
 
 
+@extend_schema(
+    tags=["Orders"],
+    summary="Reject an order (seller)",
+    request=OrderRejectSerializer,
+    responses=_ACTION_RESPONSES,
+)
 class RejectOrderView(_SellerOrderActionView):
     service = RejectOrderService
 

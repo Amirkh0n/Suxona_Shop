@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.products.models import Product
@@ -25,6 +26,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    @extend_schema_field(ProductImageSerializer(allow_null=True))
     def get_primary_image(self, obj):
         for image in obj.images.all():
             if image.is_primary:

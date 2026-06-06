@@ -3,9 +3,13 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+
+load_dotenv(BASE_DIR / ".env")
+
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-environment")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
@@ -23,6 +27,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "django_filters",
+    "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -109,6 +114,30 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SuxonaShop API",
+    "DESCRIPTION": "Marketplace API for SuxonaShop",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SORT_OPERATIONS": True,
+    "SORT_OPERATION_PARAMETERS": True,
+    "SCHEMA_PATH_PREFIX": "/api/v1",
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+    },
+    # Disambiguate the several models that each expose a `status` choice field
+    # so enum component names don't collide.
+    "ENUM_NAME_OVERRIDES": {
+        "OrderStatusEnum": "apps.common.enums.order_status.OrderStatus",
+        "ProductStatusEnum": "apps.common.enums.product_status.ProductStatus",
+        "StoreStatusEnum": "apps.common.enums.store_status.StoreStatus",
+        "StoreApplicationStatusEnum": (
+            "apps.common.enums.store_application_status.StoreApplicationStatus"
+        ),
+    },
 }
 
 SIMPLE_JWT = {

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny
@@ -20,8 +21,10 @@ from apps.banners.services import (
 )
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsAdmin
+from apps.common.schema import DetailSerializer
 
 
+@extend_schema(tags=["Banners"])
 class BannerListCreateView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -30,6 +33,11 @@ class BannerListCreateView(APIView):
             return [IsAdmin()]
         return [AllowAny()]
 
+    @extend_schema(
+        operation_id="banners_list",
+        summary="List active banners",
+        responses={200: BannerListSerializer(many=True)},
+    )
     def get(self, request: Request) -> Response:
         banners = BannerSelector.get_active_banners()
         return Response(
@@ -37,6 +45,14 @@ class BannerListCreateView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Create a banner (admin)",
+        request=BannerCreateSerializer,
+        responses={
+            201: BannerDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+        },
+    )
     def post(self, request: Request) -> Response:
         serializer = BannerCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -54,6 +70,7 @@ class BannerListCreateView(APIView):
         )
 
 
+@extend_schema(tags=["Banners"])
 class BannerDetailView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -62,6 +79,14 @@ class BannerDetailView(APIView):
             return [IsAdmin()]
         return [AllowAny()]
 
+    @extend_schema(
+        operation_id="banners_retrieve",
+        summary="Get a banner",
+        responses={
+            200: BannerDetailSerializer,
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def get(self, request: Request, banner_id: int) -> Response:
         banner = BannerSelector.get_banner_by_id(banner_id)
         if banner is None or (
@@ -76,6 +101,15 @@ class BannerDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Update a banner (admin)",
+        request=BannerUpdateSerializer,
+        responses={
+            200: BannerDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def patch(self, request: Request, banner_id: int) -> Response:
         banner = BannerSelector.get_banner_by_id(banner_id)
         if banner is None:
@@ -104,6 +138,13 @@ class BannerDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Delete a banner (admin)",
+        responses={
+            204: OpenApiResponse(description="Deleted."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def delete(self, request: Request, banner_id: int) -> Response:
         banner = BannerSelector.get_banner_by_id(banner_id)
         if banner is None:

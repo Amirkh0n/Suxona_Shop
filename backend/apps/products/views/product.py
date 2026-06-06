@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -6,6 +7,7 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsSeller, IsStoreOwner
+from apps.common.schema import DetailSerializer
 from apps.products.exceptions import (
     CategoryNotFound,
     NotProductOwnerError,
@@ -29,12 +31,23 @@ from apps.products.views.base import PaginatedAPIView
 from apps.stores.selectors import StoreSelector
 
 
+@extend_schema(tags=["Products"])
 class ProductListCreateView(PaginatedAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsSeller()]
         return [AllowAny()]
 
+    @extend_schema(
+        operation_id="products_list",
+        summary="List products",
+        parameters=[
+            OpenApiParameter("search", str, description="Search by name/description."),
+            OpenApiParameter("category", int, description="Filter by category id."),
+            OpenApiParameter("store", int, description="Filter by store id."),
+        ],
+        responses={200: ProductListSerializer(many=True)},
+    )
     def get(self, request: Request) -> Response:
         category = request.query_params.get("category")
         store = request.query_params.get("store")
@@ -51,6 +64,16 @@ class ProductListCreateView(PaginatedAPIView):
 
         return self.paginate(products, ProductListSerializer, request)
 
+    @extend_schema(
+        summary="Create a product (seller)",
+        request=ProductCreateSerializer,
+        responses={
+            201: ProductDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or store inactive."),
+            403: OpenApiResponse(DetailSerializer, "Not the product owner."),
+            404: OpenApiResponse(DetailSerializer, "Store or category not found."),
+        },
+    )
     def post(self, request: Request) -> Response:
         store = getattr(request, "seller_store", None) or (
             StoreSelector.get_store_by_owner(request.user.id)
@@ -86,12 +109,21 @@ class ProductListCreateView(PaginatedAPIView):
         )
 
 
+@extend_schema(tags=["Products"])
 class ProductDetailView(APIView):
     def get_permissions(self):
         if self.request.method in ("PATCH", "DELETE"):
             return [IsStoreOwner()]
         return [AllowAny()]
 
+    @extend_schema(
+        operation_id="products_retrieve",
+        summary="Get a product",
+        responses={
+            200: ProductDetailSerializer,
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def get(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
         if product is None:
@@ -104,6 +136,16 @@ class ProductDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Update a product (store owner)",
+        request=ProductUpdateSerializer,
+        responses={
+            200: ProductDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+            403: OpenApiResponse(DetailSerializer, "Not the product owner."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def patch(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
         if product is None:
@@ -135,6 +177,14 @@ class ProductDetailView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="Delete a product (store owner)",
+        responses={
+            204: OpenApiResponse(description="Deleted."),
+            403: OpenApiResponse(DetailSerializer, "Not the product owner."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def delete(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
         if product is None:
@@ -156,9 +206,17 @@ class ProductDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(tags=["Products"])
 class MyProductsView(PaginatedAPIView):
     permission_classes = [IsSeller]
 
+    @extend_schema(
+        summary="List my store's products (seller)",
+        responses={
+            200: ProductListSerializer(many=True),
+            404: OpenApiResponse(DetailSerializer, "Store not found."),
+        },
+    )
     def get(self, request: Request) -> Response:
         store = getattr(request, "seller_store", None) or (
             StoreSelector.get_store_by_owner(request.user.id)

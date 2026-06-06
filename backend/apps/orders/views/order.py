@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -10,6 +11,7 @@ from apps.common.permissions import (
     IsOrderOwner,
     IsOrderOwnerOrStoreOwner,
 )
+from apps.common.schema import DetailSerializer
 from apps.orders.exceptions import (
     AddressOwnershipError,
     CartNotFoundError,
@@ -33,9 +35,20 @@ from apps.orders.views.base import PaginatedAPIView
 from apps.stores.selectors import StoreSelector
 
 
+@extend_schema(tags=["Orders"])
 class OrderCreateView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="Create an order from the store cart",
+        request=OrderCreateSerializer,
+        responses={
+            201: OrderDetailSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+            403: OpenApiResponse(DetailSerializer, "Address not owned."),
+            404: OpenApiResponse(DetailSerializer, "Store/address/zone not found."),
+        },
+    )
     def post(self, request: Request) -> Response:
         serializer = OrderCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -86,17 +99,30 @@ class OrderCreateView(APIView):
         )
 
 
+@extend_schema(tags=["Orders"])
 class MyOrdersView(PaginatedAPIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="List my orders",
+        responses={200: OrderListSerializer(many=True)},
+    )
     def get(self, request: Request) -> Response:
         orders = OrderSelector.get_customer_orders(request.user.id)
         return self.paginate(orders, OrderListSerializer, request)
 
 
+@extend_schema(tags=["Orders"])
 class OrderDetailView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="Get an order",
+        responses={
+            200: OrderDetailSerializer,
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+        },
+    )
     def get(self, request: Request, order_id: int) -> Response:
         order = OrderSelector.get_order_by_id(order_id)
 
@@ -117,9 +143,20 @@ class OrderDetailView(APIView):
         )
 
 
+@extend_schema(tags=["Orders"])
 class CancelOrderView(APIView):
     permission_classes = [IsAuthenticatedUser, IsOrderOwner]
 
+    @extend_schema(
+        summary="Cancel an order",
+        request=None,
+        responses={
+            200: OrderDetailSerializer,
+            403: OpenApiResponse(DetailSerializer, "Not the order owner."),
+            404: OpenApiResponse(DetailSerializer, "Not found."),
+            409: OpenApiResponse(DetailSerializer, "Order not cancellable."),
+        },
+    )
     def post(self, request: Request, order_id: int) -> Response:
         order = OrderSelector.get_order_by_id(order_id)
         if order is None:

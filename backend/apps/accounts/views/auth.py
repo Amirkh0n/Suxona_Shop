@@ -1,4 +1,5 @@
 from django.conf import settings
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
@@ -21,15 +22,33 @@ from apps.accounts.services import (
 )
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsAuthenticatedUser
+from apps.common.schema import (
+    DetailSerializer,
+    RegisterResponseSerializer,
+    TokenPairSerializer,
+)
 
 
 def _telegram_deeplink(token: str) -> str:
     return f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start=verify_{token}"
 
 
+@extend_schema(tags=["Auth"])
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="Register a new user",
+        description=(
+            "Creates an inactive user and returns a Telegram deep link the "
+            "user must open to verify and activate their account."
+        ),
+        request=RegisterSerializer,
+        responses={
+            201: RegisterResponseSerializer,
+            400: OpenApiResponse(DetailSerializer, "Validation or service error."),
+        },
+    )
     def post(self, request: Request) -> Response:
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -52,9 +71,20 @@ class RegisterView(APIView):
         )
 
 
+@extend_schema(tags=["Auth"])
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="Obtain JWT tokens",
+        description="Authenticates a user by phone + password and returns a JWT pair.",
+        request=LoginSerializer,
+        responses={
+            200: TokenPairSerializer,
+            401: OpenApiResponse(DetailSerializer, "Invalid credentials."),
+            403: OpenApiResponse(DetailSerializer, "Account not verified."),
+        },
+    )
     def post(self, request: Request) -> Response:
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -84,9 +114,14 @@ class LoginView(APIView):
         )
 
 
+@extend_schema(tags=["Auth"])
 class CurrentUserView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
+    @extend_schema(
+        summary="Get current user",
+        responses={200: UserDetailSerializer},
+    )
     def get(self, request: Request) -> Response:
         return Response(
             UserDetailSerializer(request.user).data,
