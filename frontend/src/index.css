@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/*
+ * SuxonaShop Design System tokens (docs/frontend/06-design-system.md).
+ * Tailwind v4 theme configuration. These tokens are the single source of
+ * truth for colors, radii, fonts, and the spacing scale used app-wide.
+ */
+@theme {
+  /* Color system */
+  --color-primary: #22c55e;
+  --color-primary-hover: #16a34a;
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  /* Border radius scale */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Typography */
+  --font-sans: 'Inter', sans-serif;
+
+  /* Responsive breakpoints (mobile-first: 320 / 375 / 768 / 1280) */
+  --breakpoint-xs: 320px;
+  --breakpoint-sm: 375px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1280px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  /* Centered content with a max width of 1280px (design system). */
+  margin: 0 auto;
+  max-width: 1280px;
+  min-height: 100svh;
+}
