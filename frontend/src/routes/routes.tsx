@@ -12,33 +12,25 @@
  *   After:   export const HomePage = lazy(() => import('@/pages/HomePage'))
  */
 import { lazy } from 'react'
-import { Placeholder } from '@/pages/Placeholder'
-
-/** Creates a lazy component that renders a named Placeholder page. */
-function lazyPlaceholder(name: string): React.LazyExoticComponent<() => React.ReactElement> {
-  return lazy(
-    (): Promise<{ default: () => React.ReactElement }> =>
-      Promise.resolve({ default: () => <Placeholder name={name} /> }),
-  )
-}
+import { lazyPlaceholder } from './lazyPlaceholder'
 
 // ── Public ──────────────────────────────────────────────────────────────────
-export const HomePage          = lazyPlaceholder('Home')
-export const SearchPage        = lazyPlaceholder('Search')
+export const HomePage          = lazy(() => import('@/pages/HomePage'))
+export const SearchPage        = lazy(() => import('@/pages/SearchPage'))
+export const ProductListPage   = lazy(() => import('@/pages/ProductListPage'))
 export const StoresPage        = lazyPlaceholder('Stores')
 export const StoreDetailPage   = lazyPlaceholder('Store Detail')
-export const ProductDetailPage = lazyPlaceholder('Product Detail')
-export const CategoryPage      = lazyPlaceholder('Category')
-export const LoginPage         = lazyPlaceholder('Login')
-export const RegisterPage      = lazyPlaceholder('Register')
+export const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'))
+export const LoginPage = lazy(() => import('@/pages/LoginPage'))
+export const RegisterPage = lazy(() => import('@/pages/RegisterPage'))
 
 // ── Authenticated ────────────────────────────────────────────────────────────
-export const CartPage         = lazyPlaceholder('Cart')
-export const CheckoutPage     = lazyPlaceholder('Checkout')
-export const OrderSuccessPage = lazyPlaceholder('Order Success')
-export const OrdersPage       = lazyPlaceholder('Orders')
-export const OrderDetailPage  = lazyPlaceholder('Order Detail')
-export const ProfilePage      = lazyPlaceholder('Profile')
+export const CartPage = lazy(() => import('@/pages/CartPage'))
+export const CheckoutPage = lazy(() => import('@/pages/CheckoutPage'))
+export const OrderSuccessPage = lazy(() => import('@/pages/OrderSuccessPage'))
+export const OrdersPage = lazy(() => import('@/pages/OrdersPage'))
+export const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage'))
+export const ProfilePage = lazy(() => import('@/pages/ProfilePage'))
 export const AddressesPage    = lazyPlaceholder('Addresses')
 
 // ── Seller ───────────────────────────────────────────────────────────────────

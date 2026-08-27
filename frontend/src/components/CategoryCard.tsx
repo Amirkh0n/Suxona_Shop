@@ -24,7 +24,7 @@ export interface CategoryCardProps {
 export function CategoryCard({ name, icon: Icon, slug }: CategoryCardProps) {
   return (
     <Link
-      to={buildPath.category(slug)}
+      to={buildPath.catalog(slug)}
       className="group flex flex-col items-center gap-2 rounded-xl bg-white p-4 shadow-sm transition-all hover:shadow-md hover:scale-105"
     >
       {/* Icon Container */}

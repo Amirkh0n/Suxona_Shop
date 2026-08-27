@@ -12,10 +12,10 @@ export const ROUTES = {
   // Public
   home: '/',
   search: '/search',
+  catalog: '/catalog/:categorySlug',
   stores: '/stores',
   storeDetail: '/store/:storeId',
   productDetail: '/product/:productId',
-  category: '/category/:slug',
   login: '/login',
   register: '/register',
 
@@ -49,9 +49,9 @@ export const ROUTES = {
  * consistent with the ID-based routing decision.
  */
 export const buildPath = {
+  catalog: (categorySlug: string) => `/catalog/${categorySlug}`,
   storeDetail: (storeId: number | string) => `/store/${storeId}`,
   productDetail: (productId: number | string) => `/product/${productId}`,
-  category: (slug: string) => `/category/${slug}`,
   checkout: (storeId: number | string) => `/checkout/${storeId}`,
   orderSuccess: (orderId: number | string) => `/order-success/${orderId}`,
   orderDetail: (orderId: number | string) => `/orders/${orderId}`,

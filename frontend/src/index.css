@@ -59,3 +59,17 @@ body {
   max-width: 1280px;
   min-height: 100svh;
 }
+
+/* Animation for BottomSheet component (slide up from bottom) */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 200ms ease-out;
+}

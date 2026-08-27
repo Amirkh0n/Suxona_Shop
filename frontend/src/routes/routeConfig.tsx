@@ -30,7 +30,7 @@ import { ROUTES }         from './paths'
 import { PageWrapper }    from './PageWrapper'
 import {
   HomePage, SearchPage, StoresPage, StoreDetailPage,
-  ProductDetailPage, CategoryPage,
+  ProductDetailPage, ProductListPage,
   LoginPage, RegisterPage,
   CartPage, CheckoutPage, OrderSuccessPage,
   OrdersPage, OrderDetailPage, ProfilePage, AddressesPage,
@@ -48,10 +48,10 @@ export const routeConfig: RouteObject[] = [
     children: [
       { path: ROUTES.home,          element: <PageWrapper><HomePage /></PageWrapper> },
       { path: ROUTES.search,        element: <PageWrapper><SearchPage /></PageWrapper> },
+      { path: ROUTES.catalog,       element: <PageWrapper><ProductListPage /></PageWrapper> },
       { path: ROUTES.stores,        element: <PageWrapper><StoresPage /></PageWrapper> },
       { path: ROUTES.storeDetail,   element: <PageWrapper><StoreDetailPage /></PageWrapper> },
       { path: ROUTES.productDetail, element: <PageWrapper><ProductDetailPage /></PageWrapper> },
-      { path: ROUTES.category,      element: <PageWrapper><CategoryPage /></PageWrapper> },
 
       // Authenticated routes nested under ProtectedRoute
       {

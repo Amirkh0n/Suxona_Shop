@@ -6,7 +6,7 @@
  * the persisted localStorage session on app boot.
  */
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore' // Phase 3B: Will use actual auth state
 import { ROUTES } from './paths'
 
 export function ProtectedRoute() {

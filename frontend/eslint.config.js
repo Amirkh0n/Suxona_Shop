@@ -31,4 +31,14 @@ export default defineConfig([
       ],
     },
   },
+  // routes.tsx uses lazyPlaceholder helper which returns valid LazyExoticComponents
+  // but triggers react-refresh/only-export-components because the linter sees
+  // function calls. This is safe: all exports are lazy components, and placeholders
+  // will be replaced with real page imports as implementation progresses.
+  {
+    files: ['**/routes/routes.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
