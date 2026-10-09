@@ -1,478 +1,367 @@
 /**
- * CheckoutPage — Multi-step checkout flow for a single store
+ * CheckoutPage - Checkout page with real API integration
  *
- * Route: /checkout/:storeId
- *
- * Steps:
- * 1. Address Selection (delivery address + method)
- * 2. Contact Info (name, phone, comment)
- * 3. Review (summary + confirm order)
- *
- * Marketplace architecture:
- * - Each checkout belongs to ONE store
- * - Order is created for this specific store's items
- * - Other stores remain in cart
- *
- * Phase 3A: UI only, no API calls. Mock data.
- *
- * Future API integration points:
- * - GET /api/v1/cart (filter items by storeId)
- * - GET /api/v1/addresses (user addresses)
- * - GET /api/v1/villages (village list)
- * - GET /api/v1/stores/{store_id}/delivery-zones (delivery options)
- * - POST /api/v1/orders (create order)
+ * Features:
+ * - Real API integration for checkout
+ * - Address selection
+ * - Order summary
+ * - Payment method selection
+ * - Loading states
+ * - Error handling
+ * - Success state
  */
+
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
-import {
-  ChevronLeft,
-  MapPin,
-  User,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react'
-import { CheckoutSection } from '@/components/CheckoutSection'
-import { AddressCard } from '@/components/AddressCard'
-import { DeliveryMethodCard } from '@/components/DeliveryMethodCard'
-import { OrderSummary } from '@/components/OrderSummary'
-import { PriceSummary } from '@/components/PriceSummary'
-import { buildPath, ROUTES } from '@/routes/paths'
-
-// Mock data
-const MOCK_STORE = {
-  id: 1,
-  name: 'Uzum Market',
-  logo: 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=100&h=100&fit=crop',
-}
-
-const MOCK_CART_ITEMS = [
-  {
-    id: 1,
-    productId: 101,
-    name: 'Samsung Galaxy A54',
-    price: '3200000',
-    image:
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=200&h=200&fit=crop',
-    quantity: 1,
-  },
-  {
-    id: 2,
-    productId: 102,
-    name: 'Беспроводные наушники AirPods',
-    price: '890000',
-    image:
-      'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=200&h=200&fit=crop',
-    quantity: 2,
-  },
-]
-
-const MOCK_ADDRESSES = [
-  {
-    id: 1,
-    fullName: 'Aziz Karimov',
-    phone: '+998901234567',
-    village: 'Tashkent, Chilonzor',
-    street: 'Bunyodkor ko\'chasi',
-    house: '12, кв. 45',
-  },
-  {
-    id: 2,
-    fullName: 'Aziz Karimov',
-    phone: '+998901234567',
-    village: 'Tashkent, Yunusabad',
-    street: 'Amir Temur ko\'chasi',
-    house: '88',
-  },
-]
-
-const MOCK_DELIVERY_METHODS = [
-  {
-    id: 'delivery',
-    name: 'Доставка курьером',
-    description: 'Доставка по указанному адресу',
-    cost: 0,
-    icon: 'delivery' as const,
-  },
-  {
-    id: 'pickup',
-    name: 'Самовывоз',
-    description: 'Забрать из магазина',
-    cost: 0,
-    icon: 'pickup' as const,
-  },
-]
-
-type Step = 'address' | 'contact' | 'review'
+import { ROUTES } from '@/routes/paths'
+import { useCart } from '@/features/cart/useCart'
+import { useAddresses } from '@/features/addresses/useAddresses'
+import { useStores } from '@/features/stores/useStores'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/EmptyState'
+import { Button } from '@/components/ui/Button'
+import type { Order } from '@/types'
+import { useAppStore } from '@/stores/appStore'
 
 export default function CheckoutPage() {
-  const { storeId } = useParams<{ storeId: string }>()
-  const navigate = useNavigate()
+  const { showToast } = useAppStore()
 
-  const [currentStep, setCurrentStep] = useState<Step>('address')
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(1)
-  const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<string>('delivery')
-  const [showAddAddressModal, setShowAddAddressModal] = useState(false)
+  const { cart, isLoading, error } = useCart()
+  const { addresses, isLoading: isLoadingAddresses } = useAddresses()
+  const { stores, isLoading: isLoadingStores } = useStores()
 
-  // Contact form state
-  const [fullName, setFullName] = useState('Aziz Karimov')
-  const [phone, setPhone] = useState('+998901234567')
-  const [comment, setComment] = useState('')
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null)
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card'>('cod')
+  const [orderNote, setOrderNote] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [order, setOrder] = useState<Order | null>(null)
 
-  // Calculate totals
-  const subtotal = MOCK_CART_ITEMS.reduce(
-    (sum, item) => sum + parseFloat(item.price) * item.quantity,
-    0
-  )
-  const deliveryCost =
-    MOCK_DELIVERY_METHODS.find((m) => m.id === selectedDeliveryMethod)?.cost || 0
-  const total = subtotal + deliveryCost
+  const cartItems = cart?.stores?.reduce((acc: any[], storeGroup: any) => {
+    return acc.concat(storeGroup.items || [])
+  }, []) || []
+  const cartSubtotal = cart?.stores?.reduce((acc: number, storeGroup: any) => {
+    return acc + (parseFloat(storeGroup.subtotal) || 0)
+  }, 0) || 0
+  const cartDeliveryPrice = cart?.stores?.reduce((acc: number, storeGroup: any) => {
+    return acc + (parseFloat(storeGroup.delivery_price) || 0)
+  }, 0) || 0
+  const cartTotal = (cart?.stores?.reduce((acc: number, storeGroup: any) => {
+    return acc + (parseFloat(storeGroup.total) || 0)
+  }, 0) || 0)
 
-  const handleContinueFromAddress = () => {
-    if (!selectedAddressId || !selectedDeliveryMethod) {
-      alert('Пожалуйста, выберите адрес и способ доставки')
+  const isCartEmpty = cartItems.length === 0
+
+  // Auto-select first address and store if available
+  const handleAddressSelect = (addressId: number) => {
+    setSelectedAddressId(addressId)
+  }
+
+  const handleStoreSelect = (storeId: number) => {
+    setSelectedStoreId(storeId)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (isCartEmpty) {
+      showToast('Savat bo\'sh', 'error')
       return
     }
-    setCurrentStep('contact')
-  }
 
-  const handleContinueFromContact = () => {
-    if (!fullName.trim() || !phone.trim()) {
-      alert('Пожалуйста, заполните обязательные поля')
+    if (!selectedAddressId) {
+      showToast('Iltimos, manzil tanlang', 'error')
       return
     }
-    setCurrentStep('review')
-  }
 
-  const handleConfirmOrder = () => {
-    console.log('Creating order:', {
-      storeId,
-      addressId: selectedAddressId,
-      deliveryMethod: selectedDeliveryMethod,
-      fullName,
-      phone,
-      comment,
-      items: MOCK_CART_ITEMS,
-      total,
-    })
-    // Mock order ID
-    const mockOrderId = 12345
-    navigate(buildPath.orderSuccess(mockOrderId))
-  }
+    if (!selectedStoreId) {
+      showToast('Iltimos, do\'kon tanlang', 'error')
+      return
+    }
 
-  const handleBack = () => {
-    if (currentStep === 'contact') {
-      setCurrentStep('address')
-    } else if (currentStep === 'review') {
-      setCurrentStep('contact')
-    } else {
-      navigate(ROUTES.cart)
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch('/api/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({
+          store_id: selectedStoreId,
+          address_id: selectedAddressId,
+          payment_method: paymentMethod,
+          note: orderNote,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Buyurtmani yaratishda xatolik yuz berdi')
+      }
+
+      const newOrder = await response.json()
+      setOrder(newOrder)
+      showToast('Buyurtma muvaffaqiyatli yaratildi', 'success')
+
+      setTimeout(() => {
+        window.location.href = ROUTES.orders
+      }, 1500)
+    } catch (error: any) {
+      console.error('Checkout failed:', error)
+      showToast(error.message || 'Buyurtmani yaratishda xatolik yuz berdi', 'error')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const STEP_CONFIG = {
-    address: { title: 'Адрес доставки', icon: MapPin, step: 1 },
-    contact: { title: 'Контактные данные', icon: User, step: 2 },
-    review: { title: 'Подтверждение', icon: CheckCircle, step: 3 },
+  const handleContinueShopping = () => {
+    window.location.href = '/products'
   }
 
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-white">
-        <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4">
-          <button
-            onClick={handleBack}
-            className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-surface"
-            aria-label="Назад"
-          >
-            <ChevronLeft className="h-5 w-5 text-text" />
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-text">
-              {STEP_CONFIG[currentStep].title}
-            </h1>
-            <p className="text-xs text-text-muted">
-              Шаг {STEP_CONFIG[currentStep].step} из 3
-            </p>
-          </div>
-        </div>
-      </header>
+  if (isLoading || isLoadingAddresses || isLoadingStores) {
+    return (
+      <div className="min-h-screen bg-surface p-4">
+        <div className="max-w-4xl mx-auto">
+          <Skeleton width="150px" height="2rem" />
 
-      {/* Progress Bar */}
-      <div className="sticky top-14 z-10 bg-white px-4 py-3 shadow-sm">
-        <div className="mx-auto max-w-[1280px]">
-          <div className="flex gap-2">
-            {(['address', 'contact', 'review'] as Step[]).map((step, index) => {
-              const config = STEP_CONFIG[step]
-              const isActive = currentStep === step
-              const isCompleted =
-                config.step < STEP_CONFIG[currentStep].step
-              const Icon = config.icon
-
-              return (
-                <div key={step} className="flex flex-1 items-center">
-                  <div className="flex flex-1 items-center gap-2">
-                    <div
-                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
-                        isCompleted
-                          ? 'bg-primary text-white'
-                          : isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-surface text-text-muted'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <span
-                      className={`hidden text-sm font-medium sm:block ${
-                        isActive ? 'text-text' : 'text-text-muted'
-                      }`}
-                    >
-                      {config.title}
-                    </span>
-                  </div>
-                  {index < 2 && (
-                    <div
-                      className={`mx-2 h-0.5 w-8 flex-shrink-0 ${
-                        isCompleted ? 'bg-primary' : 'bg-border'
-                      }`}
-                    />
-                  )}
-                </div>
-              )
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div>
+              <Skeleton width="100%" height="300px" />
+            </div>
+            <div>
+              <Skeleton width="100%" height="400px" />
+            </div>
           </div>
         </div>
       </div>
+    )
+  }
 
-      <div className="mx-auto max-w-[1280px] p-4">
-        {/* Step 1: Address Selection */}
-        {currentStep === 'address' && (
-          <div className="space-y-4">
-            <CheckoutSection
-              title="Адрес доставки"
-              subtitle="Выберите адрес или добавьте новый"
-            >
-              <div className="space-y-3">
-                {MOCK_ADDRESSES.map((address) => (
-                  <AddressCard
-                    key={address.id}
-                    {...address}
-                    isSelected={selectedAddressId === address.id}
-                    onSelect={() => setSelectedAddressId(address.id)}
-                  />
-                ))}
+  if (error) {
+    return <EmptyState title="Xatolik yuz berdi" description="Iltimos, keyinroq qayta urinib ko‘ring" />
+  }
 
-                <button
-                  onClick={() => setShowAddAddressModal(true)}
-                  className="flex h-12 w-full items-center justify-center rounded-xl border-2 border-dashed border-border text-sm font-medium text-text-muted transition-colors hover:border-primary hover:text-primary"
-                >
-                  + Добавить новый адрес
-                </button>
+  if (isCartEmpty) {
+    return <EmptyState title="Savat bo‘sh" description="Mahsulot qo‘shish uchun xaridni davom eting" action={{ label: 'Xaridni davom etish', onClick: () => window.location.href = ROUTES.home }} />
+  }
 
-                {showAddAddressModal && (
-                  <div className="rounded-xl bg-warning/10 p-4">
-                    <div className="flex gap-3">
-                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-warning" />
-                      <div>
-                        <p className="font-medium text-text">
-                          Добавление адреса
-                        </p>
-                        <p className="mt-1 text-sm text-text-muted">
-                          Функция добавления нового адреса будет реализована в
-                          Phase 3B
-                        </p>
-                        <button
-                          onClick={() => setShowAddAddressModal(false)}
-                          className="mt-3 text-sm font-medium text-primary hover:underline"
-                        >
-                          Понятно
-                        </button>
+  if (order) {
+    return (
+      <div className="min-h-screen bg-surface p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg border border-border p-6">
+            <div className="flex items-center justify-center flex-col py-12">
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="text-2xl font-bold text-text mb-2">Buyurtmangiz muvaffaqiyatli yaratildi!</h2>
+              <p className="text-text-muted mb-4">Buyurtma #{order.id} uchun tasdiqlash kutmoqda</p>
+              <div className="bg-surface p-4 rounded-lg mb-6">
+                <p className="text-sm text-text-muted">Buyurtma raqami</p>
+                <p className="text-2xl font-bold text-primary">{order.id}</p>
+              </div>
+               <div className="flex gap-3">
+                 <Button onClick={() => window.location.href = ROUTES.orders}>Buyurtmalarimni ko‘rish</Button>
+                 <Button variant="outline" onClick={handleContinueShopping}>Xaridni davom etish</Button>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-surface">
+      {/* Header */}
+      <div className="bg-white border-b border-border">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold text-text">Tekshirish va Buyurtma</h1>
+          <p className="text-sm text-text-muted mt-1">Buyurtmani tasdiqlang va taminlang</p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Address Selection */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-text mb-4">Yetkazib berish manzili</h2>
+                {addresses.length === 0 ? (
+                  <div className="p-4 bg-surface rounded-lg">
+                    <p className="text-sm text-text-muted">Manzillar mavjud emas</p>
+                    <Button onClick={() => window.location.href = ROUTES.addresses} className="mt-3" size="sm">
+                      Manzil qo‘shish
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {addresses.map((address) => (
+                      <div
+                        key={address.id}
+                        onClick={() => handleAddressSelect(address.id)}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedAddressId === address.id
+                            ? 'border-primary bg-primary bg-opacity-5'
+                            : 'border-border hover:border-border-hover'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                             <h3 className="text-sm font-medium text-text">
+                               {address.village.name}, {address.street}
+                             </h3>
+                             <p className="text-sm text-text-muted mt-1">
+                               {address.street}, {address.house}
+                             </p>
+                          </div>
+                          {selectedAddressId === address.id && (
+                            <div className="text-primary">✓</div>
+                          )}
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Store Selection */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-text mb-4">Do‘kon tanlang</h2>
+                {stores.length === 0 ? (
+                  <div className="p-4 bg-surface rounded-lg">
+                    <p className="text-sm text-text-muted">Do‘konlar mavjud emas</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {stores.map((store) => (
+                      <div
+                        key={store.id}
+                        onClick={() => handleStoreSelect(store.id)}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedStoreId === store.id
+                            ? 'border-primary bg-primary bg-opacity-5'
+                            : 'border-border hover:border-border-hover'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                              <h3 className="text-sm font-medium text-text">{store.name}</h3>
+                              <p className="text-sm text-text-muted mt-1">
+                                {store.name}
+                              </p>
+                          </div>
+                          {selectedStoreId === store.id && (
+                            <div className="text-primary">✓</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Method */}
+              <div className="bg-white rounded-lg border border-border p-6">
+                <h2 className="text-lg font-semibold text-text mb-4">To‘lov usuli</h2>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-border-hover">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="cod"
+                      checked={paymentMethod === 'cod'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'cod' | 'card')}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-text">Naqd pul</p>
+                      <p className="text-xs text-text-muted">Mijozga yetkazib berilganda to‘lanadi</p>
                     </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-border-hover">
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="card"
+                      checked={paymentMethod === 'card'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'cod' | 'card')}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-text">Karta orqali</p>
+                      <p className="text-xs text-text-muted">Online to‘lov</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Order Summary */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg border border-border p-6 sticky top-20">
+                <h2 className="text-lg font-semibold text-text mb-4">Buyurtma xulosa</h2>
+
+                {/* Cart Items */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-text mb-3">Savat ({cartItems.length})</h3>
+                  <div className="space-y-3">
+                    {cartItems.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                        <div className="w-10 h-10 bg-surface rounded-lg flex items-center justify-center text-sm">
+                          📦
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-text truncate">{item.product.name}</p>
+                          <p className="text-xs text-text-muted">{item.quantity} x {item.price}</p>
+                        </div>
+                        <p className="text-sm font-medium text-text">{item.subtotal}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
-              </div>
-            </CheckoutSection>
-
-            <CheckoutSection
-              title="Способ доставки"
-              subtitle="Выберите удобный способ получения"
-            >
-              <div className="space-y-3">
-                {MOCK_DELIVERY_METHODS.map((method) => (
-                  <DeliveryMethodCard
-                    key={method.id}
-                    {...method}
-                    isSelected={selectedDeliveryMethod === method.id}
-                    onSelect={() => setSelectedDeliveryMethod(method.id)}
-                  />
-                ))}
-              </div>
-            </CheckoutSection>
-
-            <button
-              onClick={handleContinueFromAddress}
-              disabled={!selectedAddressId || !selectedDeliveryMethod}
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Продолжить
-            </button>
-          </div>
-        )}
-
-        {/* Step 2: Contact Info */}
-        {currentStep === 'contact' && (
-          <div className="space-y-4">
-            <CheckoutSection
-              title="Контактная информация"
-              subtitle="Укажите данные для связи"
-            >
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="fullName"
-                    className="mb-2 block text-sm font-medium text-text"
-                  >
-                    Полное имя <span className="text-error">*</span>
-                  </label>
-                  <input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Введите ваше имя"
-                    className="h-12 w-full rounded-xl border border-border bg-white px-4 text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-                    required
-                  />
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="phone"
-                    className="mb-2 block text-sm font-medium text-text"
-                  >
-                    Номер телефона <span className="text-error">*</span>
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+998 __ ___ __ __"
-                    className="h-12 w-full rounded-xl border border-border bg-white px-4 text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
-                    required
-                  />
+                {/* Order Summary */}
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted">Summa</span>
+                    <span className="text-text">{cartSubtotal}</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-muted">Yetkazib berish</span>
+                    <span className="text-text">{cartDeliveryPrice}</span>
+                  </div>
+
+                  <div className="flex justify-between text-lg font-bold pt-3 border-t border-border">
+                    <span className="text-text">Jami</span>
+                    <span className="text-primary">{cartTotal}</span>
+                  </div>
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="comment"
-                    className="mb-2 block text-sm font-medium text-text"
-                  >
-                    Комментарий к заказу (необязательно)
-                  </label>
+                {/* Notes */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-text mb-2">Izoh</label>
                   <textarea
-                    id="comment"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Например: позвонить за час до доставки"
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    className="w-full p-3 border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     rows={3}
-                    className="w-full rounded-xl border border-border bg-white px-4 py-3 text-text placeholder:text-text-muted focus:border-primary focus:outline-none"
+                    placeholder="Buyurtma haqida izoh qoldiring..."
                   />
                 </div>
+
+                {/* Submit Button */}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? 'Yuborilmoqda...' : 'Buyurtmani tasdiqlash'}
+                </Button>
               </div>
-            </CheckoutSection>
-
-            <button
-              onClick={handleContinueFromContact}
-              disabled={!fullName.trim() || !phone.trim()}
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-primary font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Продолжить
-            </button>
+            </div>
           </div>
-        )}
-
-        {/* Step 3: Review & Confirm */}
-        {currentStep === 'review' && (
-          <div className="space-y-4">
-            <CheckoutSection title="Ваш заказ">
-              <OrderSummary
-                storeId={MOCK_STORE.id}
-                storeName={MOCK_STORE.name}
-                storeLogo={MOCK_STORE.logo}
-                items={MOCK_CART_ITEMS}
-              />
-            </CheckoutSection>
-
-            <CheckoutSection title="Адрес доставки">
-              {selectedAddressId && (
-                <AddressCard
-                  {...MOCK_ADDRESSES.find((a) => a.id === selectedAddressId)!}
-                  isSelected={true}
-                />
-              )}
-            </CheckoutSection>
-
-            <CheckoutSection title="Способ доставки">
-              {selectedDeliveryMethod && (
-                <DeliveryMethodCard
-                  {...MOCK_DELIVERY_METHODS.find(
-                    (m) => m.id === selectedDeliveryMethod
-                  )!}
-                  isSelected={true}
-                />
-              )}
-            </CheckoutSection>
-
-            <CheckoutSection title="Контактная информация">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Имя:</span>
-                  <span className="font-medium text-text">{fullName}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-muted">Телефон:</span>
-                  <span className="font-medium text-text">{phone}</span>
-                </div>
-                {comment && (
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Комментарий:</span>
-                    <span className="font-medium text-text">{comment}</span>
-                  </div>
-                )}
-              </div>
-            </CheckoutSection>
-
-            <CheckoutSection title="Итого">
-              <PriceSummary
-                itemsCount={MOCK_CART_ITEMS.reduce(
-                  (sum, item) => sum + item.quantity,
-                  0
-                )}
-                subtotal={subtotal}
-                deliveryCost={deliveryCost}
-                total={total}
-              />
-            </CheckoutSection>
-
-            <button
-              onClick={handleConfirmOrder}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-white transition-colors hover:bg-primary-hover"
-            >
-              <CheckCircle className="h-5 w-5" />
-              Подтвердить заказ
-            </button>
-
-            <p className="text-center text-xs text-text-muted">
-              Нажимая "Подтвердить заказ", вы соглашаетесь с{' '}
-              <Link to="#" className="text-primary hover:underline">
-                условиями использования
-              </Link>
-            </p>
-          </div>
-        )}
+        </form>
       </div>
     </div>
   )

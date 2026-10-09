@@ -53,17 +53,12 @@ export const routeConfig: RouteObject[] = [
       { path: ROUTES.storeDetail,   element: <PageWrapper><StoreDetailPage /></PageWrapper> },
       { path: ROUTES.productDetail, element: <PageWrapper><ProductDetailPage /></PageWrapper> },
 
-      // Authenticated routes nested under ProtectedRoute
-      {
-        element: <ProtectedRoute />,
-        children: [
-          { path: ROUTES.cart,        element: <PageWrapper><CartPage /></PageWrapper> },
-          { path: ROUTES.orders,      element: <PageWrapper><OrdersPage /></PageWrapper> },
-          { path: ROUTES.orderDetail, element: <PageWrapper><OrderDetailPage /></PageWrapper> },
-          { path: ROUTES.profile,     element: <PageWrapper><ProfilePage /></PageWrapper> },
-          { path: ROUTES.addresses,   element: <PageWrapper><AddressesPage /></PageWrapper> },
-        ],
-      },
+       // Authenticated routes nested under ProtectedRoute
+       { path: ROUTES.cart,        element: <ProtectedRoute><PageWrapper><CartPage /></PageWrapper></ProtectedRoute> },
+       { path: ROUTES.orders,      element: <ProtectedRoute><PageWrapper><OrdersPage /></PageWrapper></ProtectedRoute> },
+       { path: ROUTES.orderDetail, element: <ProtectedRoute><PageWrapper><OrderDetailPage /></PageWrapper></ProtectedRoute> },
+       { path: ROUTES.profile,     element: <ProtectedRoute><PageWrapper><ProfilePage /></PageWrapper></ProtectedRoute> },
+       { path: ROUTES.addresses,   element: <ProtectedRoute><PageWrapper><AddressesPage /></PageWrapper></ProtectedRoute> },
     ],
   },
 
@@ -73,13 +68,8 @@ export const routeConfig: RouteObject[] = [
     children: [
       { path: ROUTES.login,    element: <PageWrapper><LoginPage /></PageWrapper> },
       { path: ROUTES.register, element: <PageWrapper><RegisterPage /></PageWrapper> },
-      {
-        element: <ProtectedRoute />,
-        children: [
-          { path: ROUTES.checkout,     element: <PageWrapper><CheckoutPage /></PageWrapper> },
-          { path: ROUTES.orderSuccess, element: <PageWrapper><OrderSuccessPage /></PageWrapper> },
-        ],
-      },
+       { path: ROUTES.checkout,     element: <ProtectedRoute><PageWrapper><CheckoutPage /></PageWrapper></ProtectedRoute> },
+       { path: ROUTES.orderSuccess, element: <ProtectedRoute><PageWrapper><OrderSuccessPage /></PageWrapper></ProtectedRoute> },
     ],
   },
 
@@ -87,31 +77,21 @@ export const routeConfig: RouteObject[] = [
   {
     element: <SellerLayout />,
     children: [
-      // Onboarding — any authenticated user (active store not required yet)
-      {
-        element: <ProtectedRoute />,
-        children: [
-          {
-            path: ROUTES.sellerOnboarding,
-            element: <PageWrapper><SellerOnboardingPage /></PageWrapper>,
-          },
-        ],
-      },
+       // Onboarding — any authenticated user (active store not required yet)
+       {
+         path: ROUTES.sellerOnboarding,
+         element: <ProtectedRoute><PageWrapper><SellerOnboardingPage /></PageWrapper></ProtectedRoute>,
+       },
 
-      // Dashboard + management — requires auth AND an active store (SellerRoute)
-      {
-        element: <SellerRoute />,
-        children: [
-          { path: ROUTES.seller,              element: <PageWrapper><SellerDashboardPage /></PageWrapper> },
-          { path: ROUTES.sellerProducts,      element: <PageWrapper><SellerProductsPage /></PageWrapper> },
-          { path: ROUTES.sellerProductCreate, element: <PageWrapper><SellerProductCreatePage /></PageWrapper> },
-          { path: ROUTES.sellerProductEdit,   element: <PageWrapper><SellerProductEditPage /></PageWrapper> },
-          { path: ROUTES.sellerOrders,        element: <PageWrapper><SellerOrdersPage /></PageWrapper> },
-          { path: ROUTES.sellerOrderDetail,   element: <PageWrapper><SellerOrderDetailPage /></PageWrapper> },
-          { path: ROUTES.sellerStatistics,    element: <PageWrapper><SellerStatisticsPage /></PageWrapper> },
-          { path: ROUTES.sellerSettings,      element: <PageWrapper><SellerSettingsPage /></PageWrapper> },
-        ],
-      },
+       // Dashboard + management — requires auth AND an active store (SellerRoute)
+       { path: ROUTES.seller,              element: <ProtectedRoute><SellerRoute><PageWrapper><SellerDashboardPage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerProducts,      element: <ProtectedRoute><SellerRoute><PageWrapper><SellerProductsPage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerProductCreate, element: <ProtectedRoute><SellerRoute><PageWrapper><SellerProductCreatePage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerProductEdit,   element: <ProtectedRoute><SellerRoute><PageWrapper><SellerProductEditPage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerOrders,        element: <ProtectedRoute><SellerRoute><PageWrapper><SellerOrdersPage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerOrderDetail,   element: <ProtectedRoute><SellerRoute><PageWrapper><SellerOrderDetailPage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerStatistics,    element: <ProtectedRoute><SellerRoute><PageWrapper><SellerStatisticsPage /></PageWrapper></SellerRoute></ProtectedRoute> },
+       { path: ROUTES.sellerSettings,      element: <ProtectedRoute><SellerRoute><PageWrapper><SellerSettingsPage /></PageWrapper></SellerRoute></ProtectedRoute> },
     ],
   },
 

@@ -1,119 +1,112 @@
 /**
- * OrderCard — Reusable order list item card
+ * OrderCard component
  *
- * Displays:
- * - Store info (logo + name)
- * - Order number
- * - Order status badge
- * - Product thumbnails (max 4)
- * - Total amount
- * - Order date
- * - View Details button
- *
- * Reusable in: Orders List, Profile Orders Section
- *
- * Phase 3A: UI only
+ * Displays a single order in the orders list.
  */
-import { Store, ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { OrderStatusBadge } from '@/components/OrderStatusBadge'
-import { buildPath } from '@/routes/paths'
 
-type OrderStatus =
-  | 'PENDING'
-  | 'ACCEPTED'
-  | 'DELIVERING'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'REJECTED'
+import { Link } from 'react-router-dom'
+import type { Order, OrderStatus } from '@/types'
+import { ROUTES } from '@/routes/paths'
+import { OrderStatusBadge } from '@/components/ui/OrderStatusBadge'
+import { OrderSummary } from '@/components/ui/OrderSummary'
+import { Button } from '@/components/ui/Button'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 interface OrderCardProps {
-  id: number
-  orderNumber: string
-  storeId: number
-  storeName: string
-  storeLogo?: string
-  status: OrderStatus
-  productImages: string[]
-  totalAmount: number
-  createdAt: string
+  order: Order
 }
 
-export function OrderCard({
-  id,
-  orderNumber,
-  storeName,
-  storeLogo,
-  status,
-  productImages,
-  totalAmount,
-  createdAt,
-}: OrderCardProps) {
-  const displayImages = productImages.slice(0, 4)
-  const remainingCount = productImages.length - 4
+export function OrderCard({ order }: OrderCardProps) {
+  const mutation = useMutation({
+    mutationFn: async (orderId: number): Promise<void> => {
+      const response = await fetch(`/api/v1/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      })
+      if (!response.ok) throw new Error('Failed to cancel order')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+    onError: (error: Error) => {
+      console.error('Failed to cancel order:', error)
+    },
+  })
+
+  const isCancelled = order.status === 'CANCELLED'
+  const isPending = order.status === 'PENDING'
+
+  if (isCancelled) {
+    return (
+      <div className="bg-white rounded-lg border border-border p-4 opacity-75">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-text">Buyurtma #{order.id}</h3>
+          <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">Bekor qilingan</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <Link
-      to={buildPath.orderDetail(id)}
-      className="block rounded-2xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-    >
-      {/* Store Header */}
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface">
-            {storeLogo ? (
-              <img
-                src={storeLogo}
-                alt={storeName}
-                className="h-full w-full rounded-lg object-cover"
-              />
-            ) : (
-              <Store className="h-5 w-5 text-primary" />
-            )}
+    <div className="bg-white rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-base font-semibold text-text">Buyurtma #{order.id}</h3>
+            <OrderStatusBadge status={order.status as OrderStatus} />
           </div>
-          <div>
-            <p className="text-sm font-semibold text-text">{storeName}</p>
-            <p className="text-xs text-text-muted">#{orderNumber}</p>
-          </div>
+          <p className="text-sm text-text-muted">
+            {new Date(order.created_at).toLocaleDateString('uz-UZ', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
         </div>
-        <OrderStatusBadge status={status} />
+
+        {isPending && (
+          <Link to={ROUTES.orderDetail.replace(':orderId', String(order.id))} className="text-sm font-medium text-primary hover:text-primary-hover">
+            Ko‘rish →
+          </Link>
+        )}
       </div>
 
-      {/* Product Thumbnails */}
-      <div className="mb-3 flex gap-2">
-        {displayImages.map((image, index) => (
-          <div
-            key={index}
-            className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-surface"
-          >
-            <img
-              src={image}
-              alt={`Product ${index + 1}`}
-              className="h-full w-full object-cover"
-              loading="lazy"
-            />
-          </div>
-        ))}
-        {remainingCount > 0 && (
-          <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-lg bg-surface text-xs font-semibold text-text-muted">
-            +{remainingCount}
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="text-sm">
+          <p className="text-text-muted mb-1">Do‘kon</p>
+          <p className="text-sm font-medium text-text">{order.store.name}</p>
+        </div>
+
+        {order.address && (
+          <div className="text-sm">
+            <p className="text-text-muted mb-1">Manzil</p>
+            <p className="text-sm font-medium text-text line-clamp-1">
+              {order.address.village.name}, {order.address.house}
+            </p>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between border-t border-border pt-3">
-        <div>
-          <p className="text-xs text-text-muted">{createdAt}</p>
-          <p className="mt-1 text-lg font-bold text-primary">
-            {totalAmount.toLocaleString()} сум
-          </p>
-        </div>
-        <div className="flex items-center gap-1 text-sm font-medium text-primary">
-          Подробнее
-          <ChevronRight className="h-4 w-4" />
-        </div>
+      <div className="border-t border-border pt-3">
+        <OrderSummary order={order} />
       </div>
-    </Link>
+
+      {isPending && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <Button onClick={() => mutation.mutate(order.id)} variant="danger" className="w-full" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Bekor qilinmoqda...' : 'Bekor qilish'}
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }
+
+export default OrderCard
+
+const queryClient = useQueryClient()

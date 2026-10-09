@@ -1,24 +1,37 @@
 /**
- * ProtectedRoute — redirects unauthenticated users to /login.
+ * ProtectedRoute component
  *
- * Reads isAuthenticated directly from authStore (Zustand client state).
- * No server request is made here — the auth state is already resolved from
- * the persisted localStorage session on app boot.
+ * Wraps protected routes and checks for authentication.
  */
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore' // Phase 3B: Will use actual auth state
-import { ROUTES } from './paths'
 
-export function ProtectedRoute() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const location = useLocation()
+import { Navigate } from 'react-router-dom'
+import { useAppStore } from '@/stores/appStore'
+import { ROUTES } from '@/routes/paths'
 
-  if (!isAuthenticated) {
-    // Pass the attempted location so login can redirect back after auth.
+interface ProtectedRouteProps {
+  children: React.ReactNode
+}
+
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const { telegramMode, isUserAuthenticated, isUserLoading } = useAppStore.getState()
+
+  // Check if user is authenticated
+  if (isUserLoading) {
     return (
-      <Navigate to={ROUTES.login} state={{ from: location }} replace />
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin text-4xl mb-4">⚙️</div>
+          <p className="text-text-muted">Tizimni tekshirmoqda...</p>
+        </div>
+      </div>
     )
   }
 
-  return <Outlet />
+  if (!isUserAuthenticated && !telegramMode) {
+    return <Navigate to={ROUTES.login} replace />
+  }
+
+  return <>{children}</>
 }
+
+export default ProtectedRoute

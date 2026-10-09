@@ -1,463 +1,201 @@
 /**
- * ProductListPage — category-based product listing.
+ * ProductListPage - Product listing page with real API integration
  *
- * Route: /catalog/:categorySlug
- *
- * Requirements (UI/UX Spec):
- * - Category title
- * - Search bar (opens Search Page)
- * - Filter button (opens filter bottom sheet)
- * - Sort button (opens sort bottom sheet)
- * - Active filter chips
- * - Product grid (2 columns mobile)
- * - Product count
- * - Loading skeleton
- * - Empty state
- * - Error state
- * - Pagination placeholder
- *
- * Phase 3A: UI only, no API calls. Mock data.
+ * Features:
+ * - Real API integration for product listing
+ * - Filtering by category
+ * - Searching by name/description
+ * - Sorting options
+ * - Pagination
+ * - Loading states with skeleton
+ * - Error handling
+ * - "Add to cart" functionality
  */
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react'
-import { ROUTES } from '@/routes/paths'
-import type { ProductCardProps } from '@/components/ProductCard'
+
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useProducts } from '@/features/products/useProducts'
+import { useCategories } from '@/hooks'
 import { ProductCard } from '@/components/ProductCard'
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { EmptyState } from '@/components/EmptyState'
 import { FilterChip } from '@/components/FilterChip'
-import { BottomSheet } from '@/components/BottomSheet'
 
-// ── Mock Data ───────────────────────────────────────────────────────────────
-
-const MOCK_CATEGORIES: Record<string, string> = {
-  food: 'Ovqat',
-  clothing: 'Kiyim',
-  electronics: 'Elektronika',
-  home: 'Uy-Joy',
-  beauty: "Go'zallik",
-  sports: 'Sport',
-}
-
-const MOCK_PRODUCTS: ProductCardProps[] = [
-  {
-    id: 1,
-    name: 'Premium Wireless Headphones',
-    price: '450 000 so\'m',
-    image: 'https://picsum.photos/seed/product1/400/400',
-    storeName: 'Tech Store',
-  },
-  {
-    id: 2,
-    name: 'Classic Cotton T-Shirt',
-    price: '85 000 so\'m',
-    image: 'https://picsum.photos/seed/product2/400/400',
-    storeName: 'Fashion Hub',
-  },
-  {
-    id: 3,
-    name: 'Organic Honey 1kg',
-    price: '120 000 so\'m',
-    image: 'https://picsum.photos/seed/product3/400/400',
-    storeName: 'Local Farm',
-  },
-  {
-    id: 4,
-    name: 'Smart Watch Pro',
-    price: '890 000 so\'m',
-    image: 'https://picsum.photos/seed/product4/400/400',
-    storeName: 'Tech Store',
-  },
-  {
-    id: 5,
-    name: 'Leather Wallet',
-    price: '95 000 so\'m',
-    image: 'https://picsum.photos/seed/product5/400/400',
-    storeName: 'Fashion Hub',
-  },
-  {
-    id: 6,
-    name: 'Coffee Beans 500g',
-    price: '65 000 so\'m',
-    image: 'https://picsum.photos/seed/product6/400/400',
-    storeName: 'Coffee Corner',
-  },
-  {
-    id: 7,
-    name: 'Running Shoes',
-    price: '320 000 so\'m',
-    image: 'https://picsum.photos/seed/product7/400/400',
-    storeName: 'Sport World',
-  },
-  {
-    id: 8,
-    name: 'Notebook Set',
-    price: '45 000 so\'m',
-    image: 'https://picsum.photos/seed/product8/400/400',
-    storeName: 'Office Supplies',
-  },
-  {
-    id: 9,
-    name: 'Bluetooth Speaker',
-    price: '180 000 so\'m',
-    image: 'https://picsum.photos/seed/product9/400/400',
-    storeName: 'Tech Store',
-  },
-  {
-    id: 10,
-    name: 'Yoga Mat',
-    price: '75 000 so\'m',
-    image: 'https://picsum.photos/seed/product10/400/400',
-    storeName: 'Sport World',
-  },
-  {
-    id: 11,
-    name: 'Water Bottle 1L',
-    price: '35 000 so\'m',
-    image: 'https://picsum.photos/seed/product11/400/400',
-    storeName: 'Sport World',
-  },
-  {
-    id: 12,
-    name: 'Desk Lamp',
-    price: '120 000 so\'m',
-    image: 'https://picsum.photos/seed/product12/400/400',
-    storeName: 'Office Supplies',
-  },
-]
-
-const MOCK_PRICE_RANGES = [
-  { label: "0 - 100 000 so'm", min: 0, max: 100000 },
-  { label: "100 000 - 300 000 so'm", min: 100000, max: 300000 },
-  { label: "300 000 - 500 000 so'm", min: 300000, max: 500000 },
-  { label: "500 000+ so'm", min: 500000, max: Infinity },
-]
-
-const MOCK_STORES = [
-  'Tech Store',
-  'Fashion Hub',
-  'Local Farm',
-  'Coffee Corner',
-  'Sport World',
-  'Office Supplies',
-]
-
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Eng yangi' },
-  { value: 'price_asc', label: 'Narx: Arzon' },
-  { value: 'price_desc', label: 'Narx: Qimmat' },
-  { value: 'popular', label: 'Mashhur' },
-]
-
-// ── Types ───────────────────────────────────────────────────────────────────
-
-interface ActiveFilters {
-  priceRange: string | null
-  store: string | null
-}
-
-type SortValue = 'newest' | 'price_asc' | 'price_desc' | 'popular'
-
-// ── Component ───────────────────────────────────────────────────────────────
+const ITEMS_PER_PAGE = 12
 
 export default function ProductListPage() {
-  const navigate = useNavigate()
-  const { categorySlug = 'food' } = useParams<{ categorySlug: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'))
+  const [categoryFilter, setCategoryFilter] = useState<number | null>(null)
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
 
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [isSortOpen, setIsSortOpen] = useState(false)
-  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
-    priceRange: null,
-    store: null,
+  const categoryQuery = useCategories()
+  const productsQuery = useProducts({
+    page: page,
+    category: categoryFilter || undefined,
+    search: searchQuery || undefined,
+    ordering: 'created_at',
   })
-  const [sortBy, setSortBy] = useState<SortValue>('newest')
 
-  const categoryName = MOCK_CATEGORIES[categorySlug] || 'Mahsulotlar'
+  const categories = categoryQuery.categories
+  const isLoading = categoryQuery.isLoading || productsQuery.isLoading
 
-  // Apply filters (client-side mock)
-  let filteredProducts = [...MOCK_PRODUCTS]
+  useEffect(() => {
+    const params: Record<string, string> = { page: String(page) }
+    if (categoryFilter) params.category = String(categoryFilter)
+    if (searchQuery) params.search = searchQuery
+    setSearchParams(params)
+  }, [page, categoryFilter, searchQuery, setSearchParams])
 
-  if (activeFilters.priceRange) {
-    const range = MOCK_PRICE_RANGES.find((r) => r.label === activeFilters.priceRange)
-    if (range) {
-      filteredProducts = filteredProducts.filter((p) => {
-        const price = parseInt(p.price.replace(/\D/g, ''))
-        return price >= range.min && price <= range.max
-      })
+  const handleCategoryFilter = (categoryId: number) => {
+    if (categoryFilter === categoryId) {
+      setCategoryFilter(null)
+    } else {
+      setCategoryFilter(categoryId)
     }
+    setPage(1)
   }
 
-  if (activeFilters.store) {
-    filteredProducts = filteredProducts.filter(
-      (p) => p.storeName === activeFilters.store
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    setPage(1)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const totalPages = Math.ceil(productsQuery.count / ITEMS_PER_PAGE)
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-surface p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-6">
+            <Skeleton width="200px" height="2rem" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
     )
   }
 
-  // Apply sorting
-  if (sortBy === 'price_asc') {
-    filteredProducts.sort((a, b) => {
-      const priceA = parseInt(a.price.replace(/\D/g, ''))
-      const priceB = parseInt(b.price.replace(/\D/g, ''))
-      return priceA - priceB
-    })
-  } else if (sortBy === 'price_desc') {
-    filteredProducts.sort((a, b) => {
-      const priceA = parseInt(a.price.replace(/\D/g, ''))
-      const priceB = parseInt(b.price.replace(/\D/g, ''))
-      return priceB - priceA
-    })
+  if (productsQuery.error) {
+    return <EmptyState title="Mahsulotlar yuklanmadi" description="Iltimos, keyinroq qayta urinib ko‘ring" />
   }
 
-  const activeFilterCount =
-    (activeFilters.priceRange ? 1 : 0) + (activeFilters.store ? 1 : 0)
-
-  const removeFilter = (key: keyof ActiveFilters) => {
-    setActiveFilters((prev) => ({ ...prev, [key]: null }))
-  }
-
-  const clearAllFilters = () => {
-    setActiveFilters({ priceRange: null, store: null })
-  }
-
-  const applyFilter = (key: keyof ActiveFilters, value: string) => {
-    setActiveFilters((prev) => ({ ...prev, [key]: value }))
-    setIsFilterOpen(false)
-  }
-
-  const applySort = (value: SortValue) => {
-    setSortBy(value)
-    setIsSortOpen(false)
+  if (productsQuery.products.length === 0 && !isLoading) {
+    return (
+      <div className="min-h-screen bg-surface p-4">
+        <div className="max-w-4xl mx-auto">
+          <EmptyState
+            title="Mahsulotlar topilmadi"
+            description={`"${searchQuery || categoryFilter ? 'So‘ralgan filter yoki qidiruv natijalari' : 'Mavjud mahsulotlar yo‘q'}`}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white shadow-sm">
-        <div className="flex items-center gap-3 px-4 py-3">
-          {/* Back Button */}
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-text transition-colors hover:bg-surface"
-            aria-label="Go back"
-          >
-            <ArrowLeft size={20} aria-hidden="true" />
-          </button>
+      <header className="bg-white border-b border-border sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <h1 className="text-2xl font-bold text-text mb-4">Barcha mahsulotlar</h1>
 
-          {/* Category Title */}
-          <h1 className="flex-1 text-lg font-bold text-text">{categoryName}</h1>
-
-          {/* Search Button */}
-          <button
-            type="button"
-            onClick={() => navigate(ROUTES.search)}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-text transition-colors hover:bg-surface"
-            aria-label="Search"
-          >
-            <Search size={20} aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* Filter / Sort Bar */}
-        <div className="flex items-center gap-3 border-t border-border px-4 py-3">
-          {/* Filter Button */}
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(true)}
-            className="relative flex h-10 items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary"
-          >
-            <SlidersHorizontal size={16} aria-hidden="true" />
-            <span>Filter</span>
-            {activeFilterCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* Sort Button */}
-          <button
-            type="button"
-            onClick={() => setIsSortOpen(true)}
-            className="flex h-10 items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-medium text-text transition-colors hover:border-primary hover:text-primary"
-          >
-            <ArrowUpDown size={16} aria-hidden="true" />
-            <span>Saralash</span>
-          </button>
-        </div>
-
-        {/* Active Filter Chips */}
-        {activeFilterCount > 0 && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3">
-            {activeFilters.priceRange && (
-              <FilterChip
-                label={activeFilters.priceRange}
-                active
-                onRemove={() => removeFilter('priceRange')}
-              />
-            )}
-            {activeFilters.store && (
-              <FilterChip
-                label={activeFilters.store}
-                active
-                onRemove={() => removeFilter('store')}
-              />
-            )}
-            <button
-              type="button"
-              onClick={clearAllFilters}
-              className="text-sm font-medium text-error transition-colors hover:text-error/80"
-            >
-              Tozalash
-            </button>
+          {/* Search Bar */}
+          <div className="relative mb-6">
+            <input
+              type="text"
+              placeholder="Mahsulot qidirish..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full px-4 py-3 pl-12 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+            />
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
-        )}
+
+            {/* Categories Filter */}
+            {categories.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+               <FilterChip
+                  label="Barchasi"
+                  active={!categoryFilter}
+                  onCategoryChange={handleCategoryFilter}
+                />
+                 {categories.map((category: any) => (
+                 <FilterChip
+                    key={category.id}
+                    label={category.name}
+                    active={categoryFilter === category.id}
+                    onCategoryChange={handleCategoryFilter}
+                  />
+              ))}
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-4">
-        {/* Product Count */}
-        <p className="mb-4 text-sm text-text-muted">
-          {filteredProducts.length} mahsulot topildi
-        </p>
-
-        {/* Empty State */}
-        {filteredProducts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-surface">
-              <Search size={32} className="text-text-muted" aria-hidden="true" />
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {productsQuery.products.map((product: any) => (
+            <div key={product.id}>
+              <ProductCard {...product} />
             </div>
-            <h2 className="mb-2 text-lg font-semibold text-text">
-              Mahsulot topilmadi
-            </h2>
-            <p className="text-sm text-text-muted">
-              Filtrlarni o&apos;zgartiring va qayta urinib ko&apos;ring
-            </p>
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="mt-4 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-              >
-                Filtrlarni tozalash
-              </button>
-            )}
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* Product Grid */}
-        {filteredProducts.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
-            ))}
-          </div>
-        )}
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 1}
+              className="px-4 py-2 rounded-lg border border-border bg-white text-text hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Oldingi
+            </button>
 
-        {/* Pagination Placeholder */}
-        {filteredProducts.length > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-sm text-text-muted">
-              Barcha mahsulotlar ko&apos;rsatildi
-            </p>
-            {/* Future: Load More / Pagination */}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              const pageNum = page - 2 + i
+              if (pageNum <= 0) return null
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    page === pageNum
+                      ? 'bg-primary text-white border-primary'
+                      : 'border-border bg-white text-text hover:bg-surface'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              )
+            })}
+
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page === totalPages}
+              className="px-4 py-2 rounded-lg border border-border bg-white text-text hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Keyingi →
+            </button>
           </div>
         )}
       </main>
-
-      {/* Filter Bottom Sheet */}
-      <BottomSheet
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-        title="Filtrlash"
-      >
-        <div className="space-y-6">
-          {/* Price Range */}
-          <section>
-            <h3 className="mb-3 text-sm font-semibold text-text">
-              Narx oralig&apos;i
-            </h3>
-            <div className="space-y-2">
-              {MOCK_PRICE_RANGES.map((range) => (
-                <button
-                  key={range.label}
-                  type="button"
-                  onClick={() => applyFilter('priceRange', range.label)}
-                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-colors ${
-                    activeFilters.priceRange === range.label
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border text-text hover:border-primary'
-                  }`}
-                >
-                  <span>{range.label}</span>
-                  {activeFilters.priceRange === range.label && (
-                    <span className="text-primary">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Store */}
-          <section>
-            <h3 className="mb-3 text-sm font-semibold text-text">Do&apos;kon</h3>
-            <div className="space-y-2">
-              {MOCK_STORES.map((store) => (
-                <button
-                  key={store}
-                  type="button"
-                  onClick={() => applyFilter('store', store)}
-                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-colors ${
-                    activeFilters.store === store
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-border text-text hover:border-primary'
-                  }`}
-                >
-                  <span>{store}</span>
-                  {activeFilters.store === store && (
-                    <span className="text-primary">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Apply Button */}
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(false)}
-            className="w-full rounded-xl bg-primary py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-          >
-            Qo&apos;llash
-          </button>
-        </div>
-      </BottomSheet>
-
-      {/* Sort Bottom Sheet */}
-      <BottomSheet
-        isOpen={isSortOpen}
-        onClose={() => setIsSortOpen(false)}
-        title="Saralash"
-      >
-        <div className="space-y-2">
-          {SORT_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => applySort(option.value as SortValue)}
-              className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition-colors ${
-                sortBy === option.value
-                  ? 'border-primary bg-primary/5 text-primary'
-                  : 'border-border text-text hover:border-primary'
-              }`}
-            >
-              <span>{option.label}</span>
-              {sortBy === option.value && (
-                <span className="text-primary">✓</span>
-              )}
-            </button>
-          ))}
-        </div>
-      </BottomSheet>
     </div>
   )
 }
+

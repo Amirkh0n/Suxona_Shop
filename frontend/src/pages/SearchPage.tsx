@@ -17,9 +17,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, X, Clock, TrendingUp, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import type { ProductCardProps } from '@/components/ProductCard'
 import { ProductCard } from '@/components/ProductCard'
-import type { StoreCardProps } from '@/components/StoreCard'
 import { StoreCard } from '@/components/StoreCard'
 
 // ── Mock Data ───────────────────────────────────────────────────────────────
@@ -39,107 +37,9 @@ const MOCK_POPULAR_SEARCHES = [
   'Coffee',
 ]
 
-const MOCK_ALL_PRODUCTS: ProductCardProps[] = [
-  {
-    id: 1,
-    name: 'Premium Wireless Headphones',
-    price: '450 000 so\'m',
-    image: 'https://picsum.photos/seed/product1/400/400',
-    storeName: 'Tech Store',
-  },
-  {
-    id: 2,
-    name: 'Classic Cotton T-Shirt',
-    price: '85 000 so\'m',
-    image: 'https://picsum.photos/seed/product2/400/400',
-    storeName: 'Fashion Hub',
-  },
-  {
-    id: 3,
-    name: 'Organic Honey 1kg',
-    price: '120 000 so\'m',
-    image: 'https://picsum.photos/seed/product3/400/400',
-    storeName: 'Local Farm',
-  },
-  {
-    id: 4,
-    name: 'Smart Watch Pro',
-    price: '890 000 so\'m',
-    image: 'https://picsum.photos/seed/product4/400/400',
-    storeName: 'Tech Store',
-  },
-  {
-    id: 5,
-    name: 'Leather Wallet',
-    price: '95 000 so\'m',
-    image: 'https://picsum.photos/seed/product5/400/400',
-    storeName: 'Fashion Hub',
-  },
-  {
-    id: 6,
-    name: 'Coffee Beans 500g',
-    price: '65 000 so\'m',
-    image: 'https://picsum.photos/seed/product6/400/400',
-    storeName: 'Coffee Corner',
-  },
-  {
-    id: 7,
-    name: 'Running Shoes',
-    price: '320 000 so\'m',
-    image: 'https://picsum.photos/seed/product7/400/400',
-    storeName: 'Sport World',
-  },
-  {
-    id: 8,
-    name: 'Notebook Set',
-    price: '45 000 so\'m',
-    image: 'https://picsum.photos/seed/product8/400/400',
-    storeName: 'Office Supplies',
-  },
-]
+const MOCK_ALL_PRODUCTS = [] as any[]
 
-const MOCK_ALL_STORES: StoreCardProps[] = [
-  {
-    id: 1,
-    name: 'Tech Store',
-    logo: 'https://picsum.photos/seed/store1/200/200',
-    rating: 4.8,
-    productCount: 342,
-    deliveryInfo: 'Yetkazib berish: 15 000 so\'m',
-  },
-  {
-    id: 2,
-    name: 'Fashion Hub',
-    logo: 'https://picsum.photos/seed/store2/200/200',
-    rating: 4.6,
-    productCount: 156,
-    deliveryInfo: 'Yetkazib berish: 12 000 so\'m',
-  },
-  {
-    id: 3,
-    name: 'Local Farm',
-    logo: 'https://picsum.photos/seed/store3/200/200',
-    rating: 4.9,
-    productCount: 89,
-    deliveryInfo: 'Yetkazib berish: bepul',
-  },
-  {
-    id: 4,
-    name: 'Coffee Corner',
-    logo: 'https://picsum.photos/seed/store4/200/200',
-    rating: 4.7,
-    productCount: 45,
-    deliveryInfo: 'Yetkazib berish: 10 000 so\'m',
-  },
-  {
-    id: 5,
-    name: 'Sport World',
-    logo: 'https://picsum.photos/seed/store5/200/200',
-    rating: 4.5,
-    productCount: 178,
-    deliveryInfo: 'Yetkazib berish: 18 000 so\'m',
-  },
-]
+const MOCK_ALL_STORES = [] as any[]
 
 // ── Types ───────────────────────────────────────────────────────────────────
 

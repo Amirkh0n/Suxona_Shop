@@ -17,8 +17,28 @@ export type User = Schemas['UserDetail']
 export type UserCompact = Schemas['UserCompact']
 export type TokenPair = Schemas['TokenPair']
 export type Login = Schemas['Login']
+export type LoginCredentials = {
+  phone: string
+  password: string
+}
 export type Register = Schemas['Register']
 export type RegisterResponse = Schemas['RegisterResponse']
+export type RegisterCredentials = Schemas['Register']
+export type TelegramAccount = Schemas['TelegramAccount']
+export type VerificationResponse = {
+  user: User
+  access_token: string
+  refresh_token: string
+}
+
+export type PaginatedResponse<T> = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: T[]
+}
+
+export type ProductListResponse = Schemas['ProductList']
 
 /* ------------------------------- Products -------------------------------- */
 export type Product = Schemas['ProductDetail']

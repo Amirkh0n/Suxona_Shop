@@ -17,6 +17,7 @@ export interface FilterChipProps {
   active?: boolean
   onRemove?: () => void
   onClick?: () => void
+  onCategoryChange?: (categoryId: number) => void
 }
 
 export function FilterChip({
@@ -24,10 +25,15 @@ export function FilterChip({
   active = false,
   onRemove,
   onClick,
+  onCategoryChange,
 }: FilterChipProps) {
   const handleClick = (_e: React.MouseEvent) => {
     if (!onRemove) {
-      onClick?.()
+      if (onCategoryChange) {
+        onCategoryChange(0)
+      } else {
+        onClick?.()
+      }
     }
   }
 

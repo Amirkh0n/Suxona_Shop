@@ -1,59 +1,62 @@
 /**
- * Top-level ErrorBoundary — catches render-time exceptions and shows a
- * friendly fallback. Raw errors and stack traces are never shown to users
- * (Req 24.2).
+ * ErrorBoundary component
  *
- * This is a class component because React's error boundary API requires
- * componentDidCatch / getDerivedStateFromError (no hooks equivalent yet).
+ * Catches React rendering errors and displays a user-friendly error message.
  */
-import { Component, type ErrorInfo, type ReactNode } from 'react'
 
-interface Props {
+import * as React from 'react'
+import type { ReactNode } from 'react'
+import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/EmptyState'
+
+interface ErrorBoundaryProps {
   children: ReactNode
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean
+  error: Error | null
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { hasError: false, error: null } as any
   }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true }
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error } as any
   }
 
-  componentDidCatch(_err: Error, _info: ErrorInfo): void {
-    // In production, send to an error tracking service (e.g. Sentry).
-    // console.error is intentionally omitted per the no-debug-logs rule.
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
-  handleReset = (): void => {
-    this.setState({ hasError: false })
+  handleReset = () => {
+    this.setState({ hasError: false, error: null } as any)
   }
 
-  render(): ReactNode {
+  render() {
     if (this.state.hasError) {
       return (
-        <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
-          <h1 className="text-xl font-bold text-text">Something went wrong</h1>
-          <p className="text-sm text-text-muted">
-            An unexpected error occurred. Please try refreshing the page.
-          </p>
-          <button
-            type="button"
-            onClick={this.handleReset}
-            className="mt-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-white min-h-[44px]"
-          >
-            Try again
-          </button>
-        </main>
+        <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+          <div className="max-w-md">
+            <EmptyState
+              title="Tizimda xatolik yuz berdi"
+              description="Iltimos, sahifani yangilashga urinib ko‘ring yoki keyinroq qayta urinib ko‘ring."
+            />
+            <div className="mt-6 space-y-3">
+              <Button onClick={this.handleReset} className="w-full">
+                Qaytadan urinib ko‘rish
+              </Button>
+            </div>
+          </div>
+        </div>
       )
     }
 
     return this.props.children
   }
 }
+
+export default ErrorBoundary

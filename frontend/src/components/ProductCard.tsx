@@ -1,101 +1,70 @@
 /**
- * ProductCard — reusable product card component.
+ * ProductCard component
  *
- * Used on: Home, Search, Product Listing, Store Detail pages.
- *
- * Requirements (Design System, UI/UX Spec):
- * - Product image (1:1 ratio)
- * - Product name (max 2 lines with line clamp)
- * - Price (visually dominant)
- * - Store name
- * - Favorite button (future)
- * - Add to cart button
- * - Clicking card opens Product Detail Page
- * - Clicking Add to Cart: auth modal if guest, add if authenticated
- *
- * Phase 3A: UI only, no API calls, no auth logic. Mock interactions.
+ * Displays a product in a card format for the product listing and details pages.
  */
-import { ShoppingCart, Heart } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { buildPath } from '@/routes/paths'
 
-export interface ProductCardProps {
+import { Link } from 'react-router-dom'
+import type { Product } from '@/types'
+import { ROUTES } from '@/routes/paths'
+import { cn } from '@/utils/cn'
+
+export interface ProductCardProps extends Omit<Product, 'id'> {
   id: number
-  name: string
-  price: string
-  image: string
-  storeName: string
-  onAddToCart?: () => void
-  onToggleFavorite?: () => void
+  image?: string
+  className?: string
+  storeName?: string
 }
 
-export function ProductCard({
-  id,
-  name,
-  price,
-  image,
-  storeName,
-  onAddToCart,
-  onToggleFavorite,
-}: ProductCardProps) {
+export function ProductCard({ id, name, price, storeName, image, description, ...props }: ProductCardProps) {
+  const defaultImage = '📦'
+
   return (
-    <article className="group relative flex flex-col rounded-2xl bg-white shadow-sm transition-shadow hover:shadow-md">
-      {/* Product Image + Link */}
-      <Link
-        to={buildPath.productDetail(id)}
-        className="block overflow-hidden rounded-t-2xl bg-surface"
-        style={{ aspectRatio: '1/1' }}
-      >
-        <img
-          src={image}
-          alt={name}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-      </Link>
-
-      {/* Favorite Button (top-right overlay) */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault()
-          onToggleFavorite?.()
-        }}
-        aria-label="Add to favorites"
-        className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-text-muted shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-error"
-      >
-        <Heart size={18} aria-hidden="true" />
-      </button>
-
-      {/* Card Content */}
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        {/* Product Name (max 2 lines) */}
-        <Link
-          to={buildPath.productDetail(id)}
-          className="line-clamp-2 text-sm font-medium text-text transition-colors hover:text-primary"
-        >
-          {name}
-        </Link>
-
-        {/* Store Name */}
-        <p className="text-xs text-text-muted">{storeName}</p>
-
-        {/* Price + Add to Cart */}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <span className="text-base font-bold text-text">{price}</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              onAddToCart?.()
-            }}
-            aria-label="Add to cart"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white transition-colors hover:bg-primary-hover"
-          >
-            <ShoppingCart size={18} aria-hidden="true" />
-          </button>
+    <Link
+      to={ROUTES.productDetail.replace(':productId', String(id))}
+      className={cn(
+        'bg-white rounded-lg border border-border overflow-hidden shadow-sm hover:shadow-md transition-all duration-200',
+        props.className
+      )}
+    >
+      <div className="relative h-48 bg-surface flex items-center justify-center text-6xl">
+        {image ? (
+          <img src={image} alt={name} className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-6xl">{defaultImage}</span>
+        )}
+        <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded">
+          {price}
         </div>
       </div>
-    </article>
+
+      <div className="p-4">
+        <h3 className="text-sm font-medium text-text mb-2 line-clamp-2 min-h-[2.5rem]">
+          {name}
+        </h3>
+
+        <p className="text-sm text-text-muted mb-3 line-clamp-2">
+          {description || `Do'kon: ${storeName}`}
+        </p>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-text-muted">{storeName}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold text-primary">{price}</span>
+            <div className="flex items-center gap-1 text-xs text-text-muted">
+              <span>⭐</span>
+              <span>4.5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 }
+
+export default ProductCard

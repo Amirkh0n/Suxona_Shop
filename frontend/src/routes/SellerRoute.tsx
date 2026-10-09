@@ -1,61 +1,46 @@
 /**
- * SellerRoute — requires authentication AND an active store.
+ * SellerRoute component
  *
- * Phase 3 integration point:
- *   The active-store check currently uses a stub that always returns
- *   `hasActiveStore = false`, routing all authenticated users to onboarding.
- *   In Phase 3, replace `useActiveStoreStub` with the real `useMyStore` hook
- *   that calls `GET /api/v1/stores/my` via the store service.
- *
- *   TODO Phase 3: swap stub → import { useMyStore } from '@/features/store/hooks/useMyStore'
- *
- * Decision logic lives in src/utils/sellerAccess.ts (pure, property-tested).
+ * Wraps seller-only routes and checks for seller permissions.
  */
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuthStore } from '@/stores/authStore'
-import { canAccessSellerRoutes } from '@/utils/sellerAccess'
-import { ROUTES } from './paths'
 
-// ---------------------------------------------------------------------------
-// Phase 3 stub — replace with the real hook once the store service exists.
-// ---------------------------------------------------------------------------
+import { Navigate } from 'react-router-dom'
+import { useAppStore } from '@/stores/appStore'
+import { ROUTES } from '@/routes/paths'
 
-/** Temporary stub returning the shape that Phase 3 will provide via
- *  useQuery(queryKeys.myStore()). */
-function useActiveStoreStub(): {
-  isLoading: boolean
-  hasActiveStore: boolean
-} {
-  // TODO Phase 3: replace with:
-  //   const { data, isLoading } = useMyStore()
-  //   return { isLoading, hasActiveStore: data !== undefined }
-  return { isLoading: false, hasActiveStore: false }
+interface SellerRouteProps {
+  children: React.ReactNode
 }
 
-// ---------------------------------------------------------------------------
+export function SellerRoute({ children }: SellerRouteProps) {
+  const { telegramMode, isUserSeller, isUserLoading } = useAppStore.getState()
 
-export function SellerRoute() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const location = useLocation()
-  const { isLoading, hasActiveStore } = useActiveStoreStub()
-
-  // While the active-store status is being resolved, show nothing (Phase 3
-  // will swap this for a skeleton loader).
-  if (isLoading) {
-    return null
-  }
-
-  const decision = canAccessSellerRoutes({ isAuthenticated, hasActiveStore })
-
-  if (decision === 'REDIRECT_LOGIN') {
-    return <Navigate to={ROUTES.login} state={{ from: location }} replace />
-  }
-
-  if (decision === 'REDIRECT_ONBOARDING') {
+  // Check if user is loading
+  if (isUserLoading) {
     return (
-      <Navigate to={ROUTES.sellerOnboarding} state={{ from: location }} replace />
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin text-4xl mb-4">⚙️</div>
+          <p className="text-text-muted">Tizimni tekshirmoqda...</p>
+        </div>
+      </div>
     )
   }
 
-  return <Outlet />
+  // In Telegram mode, users can access seller routes if they are sellers
+  if (telegramMode) {
+    if (isUserSeller) {
+      return <>{children}</>
+    }
+    return <Navigate to={ROUTES.home} replace />
+  }
+
+  // In web mode, check if user is authenticated and is a seller
+  if (!isUserSeller) {
+    return <Navigate to={ROUTES.home} replace />
+  }
+
+  return <>{children}</>
 }
+
+export default SellerRoute

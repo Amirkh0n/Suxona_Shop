@@ -1,76 +1,69 @@
 /**
- * StoreCard — reusable store card component.
+ * StoreCard component
  *
- * Used on: Home (Nearby Stores), Search (Store Results), Stores Page.
- *
- * Requirements (UI/UX Spec):
- * - Store Logo
- * - Store Name
- * - Rating
- * - Delivery Information
- * - Product Count
- * - Clicking opens Store Detail Page
- *
- * Phase 3A: UI only, no API calls. Mock data.
+ * Displays a store in a card format for store listings and details pages.
  */
-import { Star, Package } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { buildPath } from '@/routes/paths'
 
-export interface StoreCardProps {
+import { Link } from 'react-router-dom'
+import type { Store } from '@/types'
+import { ROUTES } from '@/routes/paths'
+import { cn } from '@/utils/cn'
+
+export interface StoreCardProps extends Omit<Store, 'id'> {
   id: number
-  name: string
-  logo: string
-  rating: number
-  productCount: number
-  deliveryInfo: string
+  className?: string
+  rating?: number
+  productCount?: number
+  deliveryInfo?: string
 }
 
-export function StoreCard({
-  id,
-  name,
-  logo,
-  rating,
-  productCount,
-  deliveryInfo,
-}: StoreCardProps) {
+export function StoreCard({ id, name, logo, status, ...props }: StoreCardProps) {
+  const defaultLogo = '🏪'
+
+  const statusColors: Record<string, string> = {
+    active: 'bg-green-100 text-green-700',
+    pending: 'bg-yellow-100 text-yellow-700',
+    suspended: 'bg-red-100 text-red-700',
+  }
+
+  const statusLabels: Record<string, string> = {
+    active: 'Faol',
+    pending: 'Kutilmoqda',
+    suspended: 'To\'xtatilgan',
+  }
+
   return (
     <Link
-      to={buildPath.storeDetail(id)}
-      className="group flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+      to={ROUTES.storeDetail.replace(':storeId', String(id))}
+      className={cn(
+        'bg-white rounded-lg border border-border p-4 hover:shadow-md transition-all duration-200',
+        props.className
+      )}
     >
-      {/* Store Logo */}
-      <div className="flex-shrink-0 overflow-hidden rounded-xl bg-surface">
-        <img
-          src={logo}
-          alt={`${name} logo`}
-          loading="lazy"
-          className="h-16 w-16 object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+      <div className="flex items-start justify-between mb-4">
+        <div className="text-5xl">{logo || defaultLogo}</div>
+        <span className={cn('text-xs px-2 py-1 rounded-full', statusColors[status] || statusColors.pending)}>
+          {statusLabels[status] || status}
+        </span>
       </div>
 
-      {/* Store Info */}
-      <div className="flex-1 min-w-0">
-        {/* Store Name */}
-        <h3 className="truncate font-semibold text-text transition-colors group-hover:text-primary">
-          {name}
-        </h3>
+      <h3 className="font-semibold text-text mb-1 line-clamp-1">{name}</h3>
 
-        {/* Rating */}
-        <div className="mt-1 flex items-center gap-1 text-xs text-text-muted">
-          <Star size={14} className="fill-warning text-warning" aria-hidden="true" />
-          <span className="font-medium">{rating.toFixed(1)}</span>
-        </div>
-
-        {/* Delivery Info */}
-        <p className="mt-1 text-xs text-text-muted">{deliveryInfo}</p>
+      <div className="flex items-center gap-2 text-xs text-text-muted mb-3">
+        <span>•</span>
+        <span>{props.deliveryInfo || 'Yetkazib berish: bepul'}</span>
       </div>
 
-      {/* Product Count Badge */}
-      <div className="flex flex-col items-center gap-1 rounded-lg bg-surface px-3 py-2">
-        <Package size={18} className="text-primary" aria-hidden="true" />
-        <span className="text-xs font-medium text-text">{productCount}</span>
+      <div className="flex gap-2">
+        <Link
+          to={ROUTES.storeDetail.replace(':storeId', String(id))}
+          className="flex-1 text-center text-sm font-medium text-primary hover:text-primary-hover py-2 border border-primary rounded-lg hover:bg-primary hover:bg-opacity-5 transition-colors"
+        >
+          Ko‘rish
+        </Link>
       </div>
     </Link>
   )
 }
+
+export default StoreCard

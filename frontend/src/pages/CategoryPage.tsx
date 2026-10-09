@@ -26,13 +26,17 @@ import { BottomSheet } from '@/components/BottomSheet'
 
 // ── Mock Data ───────────────────────────────────────────────────────────────
 
-const MOCK_PRODUCTS: ProductCardProps[] = [
+const MOCK_PRODUCTS: any[] = [
   {
     id: 1,
     name: 'Premium Wireless Headphones',
     price: '450 000 so\'m',
     image: 'https://picsum.photos/seed/product1/400/400',
     storeName: 'Tech Store',
+    description: 'Premium audio quality headphones',
+    status: 'ACTIVE',
+    store: { id: 1, name: 'Tech Store', logo: '', banner: '', status: 'ACTIVE' },
+    category: { id: 1, name: 'Electronics' },
   },
   {
     id: 2,
@@ -40,6 +44,10 @@ const MOCK_PRODUCTS: ProductCardProps[] = [
     price: '85 000 so\'m',
     image: 'https://picsum.photos/seed/product2/400/400',
     storeName: 'Fashion Hub',
+    description: 'Comfortable cotton t-shirt',
+    status: 'ACTIVE',
+    store: { id: 2, name: 'Fashion Hub', logo: '', banner: '', status: 'ACTIVE' },
+    category: { id: 2, name: 'Clothing' },
   },
   {
     id: 3,
@@ -47,6 +55,10 @@ const MOCK_PRODUCTS: ProductCardProps[] = [
     price: '120 000 so\'m',
     image: 'https://picsum.photos/seed/product3/400/400',
     storeName: 'Local Farm',
+    description: 'Pure organic honey from local farms',
+    status: 'ACTIVE',
+    store: { id: 3, name: 'Local Farm', logo: '', banner: '', status: 'ACTIVE' },
+    category: { id: 3, name: 'Food & Beverages' },
   },
   {
     id: 4,
@@ -54,6 +66,10 @@ const MOCK_PRODUCTS: ProductCardProps[] = [
     price: '890 000 so\'m',
     image: 'https://picsum.photos/seed/product4/400/400',
     storeName: 'Tech Store',
+    description: 'Advanced smartwatch with health tracking',
+    status: 'ACTIVE',
+    store: { id: 1, name: 'Tech Store', logo: '', banner: '', status: 'ACTIVE' },
+    category: { id: 1, name: 'Electronics' },
   },
   {
     id: 5,
@@ -61,6 +77,10 @@ const MOCK_PRODUCTS: ProductCardProps[] = [
     price: '95 000 so\'m',
     image: 'https://picsum.photos/seed/product5/400/400',
     storeName: 'Fashion Hub',
+    description: 'Genuine leather wallet',
+    status: 'ACTIVE',
+    store: { id: 2, name: 'Fashion Hub', logo: '', banner: '', status: 'ACTIVE' },
+    category: { id: 2, name: 'Accessories' },
   },
   {
     id: 6,
