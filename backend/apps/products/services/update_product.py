@@ -1,11 +1,12 @@
 from typing import Any
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from apps.accounts.models import User
 from apps.common.enums import ProductStatus
 from apps.products.exceptions import (
     CategoryNotFound,
+    DuplicateProductError,
     InvalidProductStatusError,
     NotProductOwnerError,
     ProductNotFound,
@@ -62,6 +63,9 @@ class UpdateProductService:
 
         if update_fields:
             update_fields.append("updated_at")
-            locked.save(update_fields=update_fields)
+            try:
+                locked.save(update_fields=update_fields)
+            except IntegrityError as exc:
+                raise DuplicateProductError() from exc
 
         return locked

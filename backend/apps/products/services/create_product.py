@@ -1,11 +1,12 @@
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
 from apps.accounts.models import User
 from apps.common.enums import ProductStatus, StoreStatus
 from apps.products.exceptions import (
     CategoryNotFound,
+    DuplicateProductError,
     NotProductOwnerError,
     StoreNotActiveError,
     StoreNotFound,
@@ -49,12 +50,15 @@ class CreateProductService:
         if not Category.objects.filter(pk=category_id).exists():
             raise CategoryNotFound()
 
-        return Product.objects.create(
-            store=locked_store,
-            category_id=category_id,
-            name=name,
-            description=description,
-            price=price,
-            stock=stock,
-            status=ProductStatus.DRAFT,
-        )
+        try:
+            return Product.objects.create(
+                store=locked_store,
+                category_id=category_id,
+                name=name,
+                description=description,
+                price=price,
+                stock=stock,
+                status=ProductStatus.DRAFT,
+            )
+        except IntegrityError as exc:
+            raise DuplicateProductError() from exc

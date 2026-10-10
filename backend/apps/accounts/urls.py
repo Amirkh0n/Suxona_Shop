@@ -5,6 +5,7 @@ from apps.accounts.views import (
     AddressListCreateView,
     CurrentUserView,
     LoginView,
+    RefreshTokenView,
     RegisterView,
     TelegramLinkView,
     TelegramMeView,
@@ -18,6 +19,7 @@ urlpatterns = [
     # Auth
     path("auth/register", RegisterView.as_view(), name="register"),
     path("auth/login", LoginView.as_view(), name="login"),
+    path("auth/refresh", RefreshTokenView.as_view(), name="refresh"),
     path("auth/me", CurrentUserView.as_view(), name="current-user"),
     path(
         "auth/telegram/verify",

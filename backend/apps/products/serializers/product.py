@@ -4,6 +4,7 @@ from rest_framework import serializers
 from apps.products.models import Product
 from apps.products.serializers.category import CategorySerializer
 from apps.products.serializers.product_image import ProductImageSerializer
+from apps.products.serializers.product_variant import ProductVariantSerializer
 # Cross-app import: target the leaf module (not apps.stores.serializers) to
 # keep the import graph acyclic. Do not change to the package __init__.
 from apps.stores.serializers.store import StoreListSerializer
@@ -38,6 +39,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     store = StoreListSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
+    variants = ProductVariantSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -51,6 +53,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "stock",
             "status",
             "images",
+            "variants",
             "created_at",
             "updated_at",
         ]

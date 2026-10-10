@@ -10,6 +10,7 @@ from apps.common.permissions import IsSeller, IsStoreOwner
 from apps.common.schema import DetailSerializer
 from apps.products.exceptions import (
     CategoryNotFound,
+    DuplicateProductError,
     NotProductOwnerError,
     ProductNotFound,
     StoreNotActiveError,
@@ -99,6 +100,8 @@ class ProductListCreateView(PaginatedAPIView):
             return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         except StoreNotActiveError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except DuplicateProductError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except ServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -168,6 +171,8 @@ class ProductDetailView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except NotProductOwnerError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except DuplicateProductError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except ServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 

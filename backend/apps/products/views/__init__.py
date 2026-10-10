@@ -9,6 +9,7 @@ from .product_image import (
     ProductImageListUploadView,
     ProductImageReorderView,
 )
+from .product_variant import ProductVariantDetailView, ProductVariantListCreateView
 
 
 __all__ = [
@@ -20,4 +21,10 @@ __all__ = [
     "ProductImageDeleteView",
     "ProductImageListUploadView",
     "ProductImageReorderView",
+    "ProductVariantDetailView",
+    "ProductVariantListCreateView",
 ]
+from .product_variant import ProductVariantDetailView, ProductVariantListCreateView
+
+
+__all__ = ["ProductVariantDetailView", "ProductVariantListCreateView"]

@@ -9,7 +9,13 @@ class OrderSelector:
         return (
             Order.objects.filter(pk=order_id)
             .select_related("customer", "store", "address", "address__village")
-            .prefetch_related("items", "items__product", "items__product__images")
+            .prefetch_related(
+                "items",
+                "items__product",
+                "items__product__images",
+                "items__variant",
+                "items__variant__product",
+            )
             .first()
         )
 
@@ -18,7 +24,13 @@ class OrderSelector:
         return (
             Order.objects.filter(pk=order_id, customer_id=customer_id)
             .select_related("customer", "store", "address", "address__village")
-            .prefetch_related("items", "items__product", "items__product__images")
+            .prefetch_related(
+                "items",
+                "items__product",
+                "items__product__images",
+                "items__variant",
+                "items__variant__product",
+            )
             .first()
         )
 
@@ -27,7 +39,13 @@ class OrderSelector:
         return (
             Order.objects.filter(pk=order_id, store_id=store_id)
             .select_related("customer", "store", "address", "address__village")
-            .prefetch_related("items", "items__product", "items__product__images")
+            .prefetch_related(
+                "items",
+                "items__product",
+                "items__product__images",
+                "items__variant",
+                "items__variant__product",
+            )
             .first()
         )
 

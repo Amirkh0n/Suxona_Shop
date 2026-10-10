@@ -8,8 +8,15 @@ class CartItemSelector:
     def get_cart_item_by_id(cart_item_id) -> CartItem | None:
         return (
             CartItem.objects.filter(pk=cart_item_id)
-            .select_related("product", "product__store", "cart")
-            .prefetch_related("product__images")
+            .select_related(
+                "product",
+                "product__store",
+                "product__category",
+                "variant",
+                "variant__product",
+                "cart",
+            )
+            .prefetch_related("product__images", "product__variants")
             .first()
         )
 
@@ -17,8 +24,14 @@ class CartItemSelector:
     def get_cart_items(cart_id) -> QuerySet[CartItem]:
         return (
             CartItem.objects.filter(cart_id=cart_id)
-            .select_related("product", "product__store")
-            .prefetch_related("product__images")
+            .select_related(
+                "product",
+                "product__store",
+                "product__category",
+                "variant",
+                "variant__product",
+            )
+            .prefetch_related("product__images", "product__variants")
             .order_by("product__store_id", "created_at")
         )
 
@@ -29,8 +42,14 @@ class CartItemSelector:
                 cart_id=cart_id,
                 product__store_id=store_id,
             )
-            .select_related("product", "product__store")
-            .prefetch_related("product__images")
+            .select_related(
+                "product",
+                "product__store",
+                "product__category",
+                "variant",
+                "variant__product",
+            )
+            .prefetch_related("product__images", "product__variants")
             .order_by("created_at")
         )
 

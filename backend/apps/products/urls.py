@@ -9,6 +9,8 @@ from apps.products.views import (
     ProductImageListUploadView,
     ProductImageReorderView,
     ProductListCreateView,
+    ProductVariantDetailView,
+    ProductVariantListCreateView,
 )
 
 
@@ -38,6 +40,16 @@ urlpatterns = [
         "product-images/<int:image_id>",
         ProductImageDeleteView.as_view(),
         name="product-image-delete",
+    ),
+    path(
+        "products/<int:product_id>/variants",
+        ProductVariantListCreateView.as_view(),
+        name="product-variant-list-create",
+    ),
+    path(
+        "product-variants/<int:variant_id>",
+        ProductVariantDetailView.as_view(),
+        name="product-variant-detail",
     ),
     # Categories
     path("categories", CategoryListCreateView.as_view(), name="category-list"),

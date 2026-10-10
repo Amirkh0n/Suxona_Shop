@@ -15,6 +15,13 @@ class CartItem(BaseModel):
         on_delete=models.CASCADE,
         related_name="cart_items",
     )
+    variant = models.ForeignKey(
+        "products.ProductVariant",
+        on_delete=models.CASCADE,
+        related_name="cart_items",
+        null=True,
+        blank=True,
+    )
     quantity = models.PositiveIntegerField()
 
     class Meta:
@@ -25,7 +32,13 @@ class CartItem(BaseModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["cart", "product"],
+                condition=Q(variant__isnull=True),
                 name="unique_cart_product",
+            ),
+            models.UniqueConstraint(
+                fields=["cart", "product", "variant"],
+                condition=Q(variant__isnull=False),
+                name="unique_cart_product_variant",
             ),
             models.CheckConstraint(
                 condition=Q(quantity__gt=0),

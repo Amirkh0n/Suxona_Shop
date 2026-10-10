@@ -19,12 +19,28 @@ class ProductNotFound(ProductServiceError):
     default_message = "Product was not found."
 
 
+class DuplicateProductError(ProductServiceError):
+    default_message = "A product with this name already exists in the store."
+
+
 class NotProductOwnerError(ProductServiceError):
     default_message = "You do not own this product."
 
 
 class InvalidProductStatusError(ProductServiceError):
     default_message = "Invalid product status."
+
+
+class ProductVariantNotFound(ProductServiceError):
+    default_message = "Product variant was not found."
+
+
+class DuplicateProductVariantError(ProductServiceError):
+    default_message = "A variant with this SKU or attributes already exists."
+
+
+class InvalidProductVariantError(ProductServiceError):
+    default_message = "Variant attributes must be a non-empty object."
 
 
 # --- Category ------------------------------------------------------------

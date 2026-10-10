@@ -15,6 +15,13 @@ class OrderItem(BaseModel):
         on_delete=models.PROTECT,
         related_name="order_items",
     )
+    variant = models.ForeignKey(
+        "products.ProductVariant",
+        on_delete=models.PROTECT,
+        related_name="order_items",
+        null=True,
+        blank=True,
+    )
     price = models.DecimalField(max_digits=12, decimal_places=2)
     quantity = models.PositiveIntegerField()
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)

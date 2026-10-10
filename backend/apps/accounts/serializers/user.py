@@ -50,6 +50,12 @@ class LoginSerializer(serializers.Serializer):
     )
 
 
+class RefreshTokenSerializer(serializers.Serializer):
+    """Validation-only serializer for refreshing an access token."""
+
+    refresh = serializers.CharField(write_only=True)
+
+
 class TelegramVerifySerializer(serializers.Serializer):
     """Validation-only serializer for the Telegram verification intake."""
 

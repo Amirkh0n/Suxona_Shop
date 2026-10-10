@@ -4,16 +4,19 @@ from apps.orders.models import OrderItem
 # Cross-app import: target the leaf module (not apps.products.serializers) to
 # keep the import graph acyclic. Do not change to the package __init__.
 from apps.products.serializers.product import ProductListSerializer
+from apps.products.serializers.product_variant import ProductVariantSerializer
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductListSerializer(read_only=True)
+    variant = ProductVariantSerializer(read_only=True)
 
     class Meta:
         model = OrderItem
         fields = [
             "id",
             "product",
+            "variant",
             "price",
             "quantity",
             "subtotal",

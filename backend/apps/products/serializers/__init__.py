@@ -15,6 +15,11 @@ from .product_image import (
     ProductImageSerializer,
     ProductImageUploadSerializer,
 )
+from .product_variant import (
+    ProductVariantCreateSerializer,
+    ProductVariantSerializer,
+    ProductVariantUpdateSerializer,
+)
 
 
 __all__ = [
@@ -29,4 +34,7 @@ __all__ = [
     "ProductImageReorderSerializer",
     "ProductImageSerializer",
     "ProductImageUploadSerializer",
+    "ProductVariantCreateSerializer",
+    "ProductVariantSerializer",
+    "ProductVariantUpdateSerializer",
 ]

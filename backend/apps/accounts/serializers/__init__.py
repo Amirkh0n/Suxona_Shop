@@ -7,6 +7,7 @@ from .address import (
 from .telegram_account import TelegramAccountSerializer, TelegramLinkSerializer
 from .user import (
     LoginSerializer,
+    RefreshTokenSerializer,
     RegisterSerializer,
     TelegramVerifySerializer,
     UserCompactSerializer,
@@ -22,6 +23,7 @@ __all__ = [
     "TelegramAccountSerializer",
     "TelegramLinkSerializer",
     "LoginSerializer",
+    "RefreshTokenSerializer",
     "RegisterSerializer",
     "TelegramVerifySerializer",
     "UserCompactSerializer",

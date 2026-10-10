@@ -11,7 +11,7 @@ from apps.common.admin import (
     render_thumbnail,
 )
 from apps.common.enums import ProductStatus
-from apps.products.models import Category, Product, ProductImage
+from apps.products.models import Category, Product, ProductImage, ProductVariant
 
 
 @admin.register(Category)
@@ -53,6 +53,21 @@ class ProductImageInline(admin.TabularInline):
         return render_thumbnail(obj.image, height=48)
 
 
+class ProductVariantInline(admin.TabularInline):
+    model = ProductVariant
+    extra = 0
+    fields = ("sku", "attributes", "price", "stock", "is_active")
+    ordering = ("sku",)
+
+
+@admin.register(ProductVariant)
+class ProductVariantAdmin(admin.ModelAdmin):
+    list_display = ("sku", "product", "price", "stock", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("sku", "product__name")
+    autocomplete_fields = ("product",)
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
@@ -83,7 +98,7 @@ class ProductAdmin(admin.ModelAdmin):
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
 
-    inlines = (ProductImageInline,)
+    inlines = (ProductImageInline, ProductVariantInline)
     actions = ("activate_products", "archive_products")
 
     def get_queryset(self, request):

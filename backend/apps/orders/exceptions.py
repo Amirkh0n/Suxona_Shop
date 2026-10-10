@@ -57,5 +57,13 @@ class ProductNotPurchasable(OrderServiceError):
     default_message = "Product is not available for purchase."
 
 
+class ProductVariantNotPurchasable(OrderServiceError):
+    default_message = "Product variant is not available for purchase."
+
+
+class ProductVariantMismatchError(OrderServiceError):
+    default_message = "Product variant does not belong to the selected product."
+
+
 class InvalidQuantityError(OrderServiceError):
     default_message = "Quantity must be greater than zero."

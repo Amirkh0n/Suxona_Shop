@@ -36,9 +36,17 @@ class Product(BaseModel):
             models.Index(fields=["created_at"], name="product_created_idx"),
         ]
         constraints = [
+            models.UniqueConstraint(
+                fields=["store", "name"],
+                name="unique_store_product_name",
+            ),
             models.CheckConstraint(
                 condition=Q(price__gte=0),
                 name="product_price_non_negative",
+            ),
+            models.CheckConstraint(
+                condition=Q(stock__gte=0) | Q(stock__isnull=True),
+                name="product_stock_non_negative",
             ),
         ]
 

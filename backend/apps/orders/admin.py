@@ -10,9 +10,9 @@ from apps.orders.models import Cart, CartItem, Order, OrderItem
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    fields = ("product", "price", "quantity", "subtotal")
-    readonly_fields = ("product", "price", "quantity", "subtotal")
-    autocomplete_fields = ("product",)
+    fields = ("product", "variant", "price", "quantity", "subtotal")
+    readonly_fields = ("product", "variant", "price", "quantity", "subtotal")
+    autocomplete_fields = ("product", "variant")
     can_delete = False
 
     def has_add_permission(self, request, obj=None) -> bool:

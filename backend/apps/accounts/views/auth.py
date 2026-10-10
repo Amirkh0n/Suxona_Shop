@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.exceptions import (
@@ -13,6 +14,7 @@ from apps.accounts.exceptions import (
 )
 from apps.accounts.serializers import (
     LoginSerializer,
+    RefreshTokenSerializer,
     RegisterSerializer,
     UserDetailSerializer,
 )
@@ -125,5 +127,39 @@ class CurrentUserView(APIView):
     def get(self, request: Request) -> Response:
         return Response(
             UserDetailSerializer(request.user).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(tags=["Auth"])
+class RefreshTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Refresh an access token",
+        request=RefreshTokenSerializer,
+        responses={
+            200: TokenPairSerializer,
+            401: OpenApiResponse(
+                DetailSerializer,
+                "Invalid or expired refresh token.",
+            ),
+        },
+    )
+    def post(self, request: Request) -> Response:
+        serializer = RefreshTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            refresh = RefreshToken(serializer.validated_data["refresh"])
+            access = refresh.access_token
+        except TokenError:
+            return Response(
+                {"detail": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        return Response(
+            {"access": str(access), "refresh": str(refresh)},
             status=status.HTTP_200_OK,
         )

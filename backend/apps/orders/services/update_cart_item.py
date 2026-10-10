@@ -3,10 +3,14 @@ from django.db import transaction
 from apps.accounts.models import User
 from apps.orders.exceptions import (
     CartItemNotFound,
+    InsufficientStockError,
     InvalidQuantityError,
     NotCartOwnerError,
+    ProductNotPurchasable,
+    ProductVariantNotPurchasable,
 )
 from apps.orders.models import CartItem
+from apps.common.enums import ProductStatus
 
 
 class UpdateCartItemService:
@@ -25,7 +29,7 @@ class UpdateCartItemService:
 
         item = (
             CartItem.objects.select_for_update()
-            .select_related("cart")
+            .select_related("cart", "product", "variant")
             .filter(pk=cart_item.pk)
             .first()
         )
@@ -34,6 +38,17 @@ class UpdateCartItemService:
 
         if item.cart.user_id != user.pk:
             raise NotCartOwnerError()
+
+        if item.product.status != ProductStatus.ACTIVE:
+            raise ProductNotPurchasable()
+        if item.variant is not None and not item.variant.is_active:
+            raise ProductVariantNotPurchasable()
+
+        available_stock = (
+            item.variant.stock if item.variant is not None else item.product.stock
+        )
+        if available_stock is not None and available_stock < quantity:
+            raise InsufficientStockError()
 
         item.quantity = quantity
         item.save(update_fields=["quantity", "updated_at"])

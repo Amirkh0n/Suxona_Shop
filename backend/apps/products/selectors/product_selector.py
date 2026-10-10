@@ -1,7 +1,13 @@
-from django.db.models import Q, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 
 from apps.common.enums import ProductStatus
-from apps.products.models import Product
+from apps.products.models import Product, ProductVariant
+
+
+VARIANT_PREFETCH = Prefetch(
+    "variants",
+    queryset=ProductVariant.objects.select_related("product"),
+)
 
 
 class ProductSelector:
@@ -10,7 +16,7 @@ class ProductSelector:
         return (
             Product.objects.filter(pk=product_id)
             .select_related("store", "category")
-            .prefetch_related("images")
+            .prefetch_related("images", VARIANT_PREFETCH)
             .first()
         )
 
@@ -19,7 +25,7 @@ class ProductSelector:
         return (
             Product.objects.filter(pk=product_id, status=ProductStatus.ACTIVE)
             .select_related("store", "category")
-            .prefetch_related("images")
+            .prefetch_related("images", VARIANT_PREFETCH)
             .first()
         )
 
@@ -28,7 +34,7 @@ class ProductSelector:
         return (
             Product.objects.filter(status=ProductStatus.ACTIVE)
             .select_related("store", "category")
-            .prefetch_related("images")
+            .prefetch_related("images", VARIANT_PREFETCH)
             .order_by("-created_at")
         )
 
@@ -37,7 +43,7 @@ class ProductSelector:
         return (
             Product.objects.filter(store_id=store_id)
             .select_related("store", "category")
-            .prefetch_related("images")
+            .prefetch_related("images", VARIANT_PREFETCH)
             .order_by("-created_at")
         )
 
@@ -49,7 +55,7 @@ class ProductSelector:
                 status=ProductStatus.ACTIVE,
             )
             .select_related("store", "category")
-            .prefetch_related("images")
+            .prefetch_related("images", VARIANT_PREFETCH)
             .order_by("-created_at")
         )
 
@@ -61,7 +67,7 @@ class ProductSelector:
                 status=ProductStatus.ACTIVE,
             )
             .select_related("store", "category")
-            .prefetch_related("images")
+            .prefetch_related("images", VARIANT_PREFETCH)
             .order_by("-created_at")
         )
 
