@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* --- Color --- */
+  --color-bg: #F6F8F6;
+  --color-surface: #FFFFFF;
+  --color-ink: #16201A;
+  --color-ink-soft: #7C877E;
+  --color-line: #E7ECE6;
+
+  --color-primary: #16A34A;
+  --color-primary-dark: #12803C;
+  --color-primary-soft: #E7F6EC;
+  --color-primary-contrast: #FFFFFF;
+
+  --color-accent-navy: #1B2430;
+
+  --color-danger: #EF4444;
+  --color-danger-soft: #FDECEC;
+  --color-warning: #F59E0B;
+  --color-warning-soft: #FEF3DF;
+  --color-info: #3B82F6;
+  --color-info-soft: #E8F0FE;
+  --color-success: #16A34A;
+  --color-success-soft: #E7F6EC;
+
+  /* --- Type --- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 1.875rem;
+  --fs-3xl: 2.25rem;
+
+  /* --- Space (8px grid) --- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 48px;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(22, 32, 26, 0.04), 0 1px 0 rgba(22, 32, 26, 0.03);
+  --shadow-float: 0 8px 24px rgba(22, 32, 26, 0.12);
+
+  --max-width: 1280px;
+  --tabbar-height: 64px;
+  --sidebar-width: 240px;
+}
+
+/* Dark mode: same component CSS, swapped surface/ink/line tokens. Applied
+   either by the OS preference or by the explicit [data-theme="dark"]
+   attribute that the in-app toggle sets on <html> (and remembers via
+   localStorage), so a user's manual choice always wins over the OS setting. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: #10140F;
+    --color-surface: #19201A;
+    --color-ink: #EDF2EC;
+    --color-ink-soft: #8D978E;
+    --color-line: #2A332B;
+
+    --color-primary-soft: #16311F;
+    --color-accent-navy: #0E151F;
+
+    --color-danger-soft: #3A1C1C;
+    --color-warning-soft: #3A2C10;
+    --color-info-soft: #16233A;
+    --color-success-soft: #16311F;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(0, 0, 0, 0.2);
+    --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+}
+:root[data-theme='dark'] {
+  --color-bg: #10140F;
+  --color-surface: #19201A;
+  --color-ink: #EDF2EC;
+  --color-ink-soft: #8D978E;
+  --color-line: #2A332B;
+
+  --color-primary-soft: #16311F;
+  --color-accent-navy: #0E151F;
+
+  --color-danger-soft: #3A1C1C;
+  --color-warning-soft: #3A2C10;
+  --color-info-soft: #16233A;
+  --color-success-soft: #16311F;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(0, 0, 0, 0.2);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.45);
+}

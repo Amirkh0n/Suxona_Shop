@@ -1,0 +1,18 @@
+{
+  "name": "SuxonaShop — onlayn do'konlar",
+  "short_name": "SuxonaShop",
+  "description": "Mahalliy do'konlardan xarid qiling: katalog, savat, buyurtma va sotuvchi paneli bir ilovada.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F8F6",
+  "theme_color": "#16A34A",
+  "lang": "uz",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
