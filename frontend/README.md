@@ -17,7 +17,15 @@ npm run dev
 ### Xaridor (mobil-first, pastki tab bar bilan)
 - **Auth** — ro'yxatdan o'tish (+ Telegram orqali faollashtirish havolasi), kirish, JWT
 - **Bosh sahifa** — bannerlar, kategoriya chiplari, tavsiya etilgan do'konlar, yangi mahsulotlar
-- **Katalog** — qidiruv, kategoriya tablari, do'kon bo'yicha filtr, saralash (narx/nom)
+- **Katalog** (`/katalog`) — faqat kategoriyalar daraxti: ota-kategoriyalar
+  ro'yxati, har birini `>` tugmasi bilan ichma-ich ochib (child/sub-child)
+  ko'rish mumkin. Kategoriya nomiga bosilsa mahsulotlar sahifasiga o'tadi.
+- **Mahsulotlar** (`/mahsulotlar`) — qidiruv, do'kon bo'yicha filtr, saralash
+  (narx/nom). Kategoriyadan kirilganda — agar o'sha kategoriyaning
+  pastki (child) kategoriyalari bo'lsa, ularning barcha mahsulotlari ham
+  shu yerda birgalikda ko'rsatiladi (bir nechta so'rov parallel yuborilib,
+  natijalar birlashtiriladi, chunki backend bitta so'rovda faqat bitta
+  aniq kategoriya ID bo'yicha filtrlaydi).
 - **Mahsulot sahifasi** — galereya, do'kon havolasi, savatga qo'shish (sticky CTA)
 - **Savat** — do'kon bo'yicha guruhlangan, miqdorni o'zgartirish
 - **Buyurtma berish** — 2 bosqichli (manzil tanlash → ko'rib chiqish/tasdiqlash), muvaffaqiyat sahifasi
@@ -39,6 +47,19 @@ ekanligi (`myStore` orqali) aniqlanib, tegishli amallar ko'rsatiladi.
 
 Dastlabki versiyadan keyin, real loyiha sifatida qo'yilishi uchun quyidagilar qo'shildi:
 
+- **Pastki tab bar endi haqiqatan "fixed"** — `.app-shell`da ilgari
+  `transform: translateZ(0)` bor edi (desktopda 480px ramkani markazlashtirib,
+  undagi `position: fixed` elementlarni ham shu ramkaga bog'lab turish uchun).
+  Lekin bu yon-ta'sir sifatida vertikal joylashuvni ham buzgan edi:
+  `.app-shell`ning balandligi qattiq emas (kontent bilan o'sadi), shu sabab
+  "fixed, bottom: 0" endi ekran tagiga emas, balki shu o'sib ketgan
+  qutichaning tagiga yopishib qolardi — mahsulotlar ko'p bo'lganda tab bar
+  butun sahifa oxirigacha pastga "tushib ketgandek" ko'rinar edi. Endi tab
+  bar, mahsulot sahifasidagi "Savatga qo'shish" paneli, savat va checkout
+  pastki panellari haqiqiy brauzer oynasiga (`position: fixed` + `left: 50%;
+  transform: translateX(-50%); max-width: 480px`) bog'langan — desktopda
+  ko'rinishi bir xil qoladi, lekin endi sahifa qanchalik uzun bo'lmasin,
+  doim ekran tagida qotib turadi.
 - **Xatolikdan himoya** — `ErrorBoundary` butun ilovani o'raydi, shunda bitta
   komponent xato bersa, foydalanuvchi oq ekran o'rniga tushunarli xabar ko'radi.
 - **Code-splitting** — sotuvchi paneli (`/sotuvchi/*`) `React.lazy` orqali alohida
@@ -81,10 +102,27 @@ Dastlabki versiyadan keyin, real loyiha sifatida qo'yilishi uchun quyidagilar qo
   `resolveImageUrl()` barcha rasm manzillarini `.env`dagi
   `VITE_IMAGE_BASE_URL` (bo'sh bo'lsa `VITE_API_BASE_URL`) bilan to'ldiradi.
   Rasmlar kelajakda Cloudflare R2 yoki boshqa CDN/bucket'ga ko'chirilsa, faqat
-  shu environment o'zgaruvchisini R2 bucket manzilига almashtirish kifoya —
+  shu environment o'zgaruvchisini R2 bucket manzili bilan almashtirish kifoya —
   kodda hech narsa o'zgartirilmaydi. Agar backend kelajakda allaqachon to'liq
   URL (`https://...`) qaytara boshlasa, funksiya buni ham avtomatik aniqlab,
   o'zgartirmasdan qaytaradi.
+- **Katalog qayta qurildi (faqat kategoriyalar daraxti)** — ilgari `/katalog`
+  ham qidiruv, ham mahsulot ro'yxatini ko'rsatardi, Bosh sahifadagi qidiruv
+  bilan birga ikkita qidiruv maydoni chiqib qolgan edi. Endi: `/katalog` —
+  faqat kategoriyalar daraxti (`src/pages/customer/Catalog.jsx`, ichma-ich
+  ochiladigan child/sub-child'lar bilan), `/mahsulotlar` — haqiqiy mahsulot
+  ro'yxati sahifasi (o'z qidiruv maydonisiz, Bosh sahifa headeridagi yagona
+  qidiruv shu sahifaga `?search=` orqali yo'naltiradi). Kategoriya
+  nomi bosilganda, agar u pastki kategoriyalarga ega bo'lsa, o'sha
+  kategoriya + barcha avlodlarining mahsulotlari birgalikda ko'rsatiladi
+  (`src/utils/categoryTree.js`). Shuningdek, `/categories` sahifalangan
+  endpoint ekanligi uchun ilgari faqat 1-sahifa kategoriyalari olinardi —
+  shu sabab child kategoriyalar ko'rinmas edi; endi barcha sahifalar oxirigacha
+  yig'ib olinadi.
+- **Bosh sahifadagi kategoriya ikonkalari** — doira ichida kvadrat rasm
+  bo'lib qolayotgan edi (`object-fit: contain` 24×24 o'lchamda, doira esa
+  56×56 — fon rangi atrofida qolib ketardi). Endi rasm doirani to'liq
+  qoplaydi (`object-fit: cover`, 100%×100%, `overflow: hidden`).
 
 ## Nima UI-only (backendga ulanmagan)
 

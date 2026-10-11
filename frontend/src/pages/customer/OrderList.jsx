@@ -51,7 +51,7 @@ export default function OrderList() {
         <div className="empty-state card">
           <h3>Hali buyurtma yo'q</h3>
           <p>Mahsulotlarni ko'rib chiqing va birinchi buyurtmangizni bering.</p>
-          <Link to="/katalog" className="btn btn-primary">Xaridni boshlash</Link>
+          <Link to="/mahsulotlar" className="btn btn-primary">Xaridni boshlash</Link>
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty-state card"><h3>Bu bo'limda buyurtma yo'q</h3></div>

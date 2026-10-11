@@ -44,7 +44,7 @@ export default function Cart() {
         <div className="empty-state card">
           <h3>Savatingiz bo'sh</h3>
           <p>Xarid qilishni boshlash uchun mahsulotlarni ko'rib chiqing.</p>
-          <Link to="/katalog" className="btn btn-primary">Xaridni boshlash</Link>
+          <Link to="/mahsulotlar" className="btn btn-primary">Xaridni boshlash</Link>
         </div>
       </div>
     );
@@ -73,7 +73,7 @@ export default function Cart() {
               <>
                 {items.map((item) => (
                   <div key={item.id} className="cart-item-row">
-                    <div className="cart-item-main">
+                    <Link to={`/mahsulot/${item.product?.id}`} className="cart-item-main">
                       <div className="cart-item-media">
                         {item.product?.primary_image?.image && (
                           <img src={resolveImageUrl(item.product.primary_image.image)} alt="" />
@@ -83,7 +83,7 @@ export default function Cart() {
                         <div className="cart-item-name">{item.product?.name}</div>
                         <div className="cart-item-price">{formatSum(item.product?.price)}</div>
                       </div>
-                    </div>
+                    </Link>
                     <div className="cart-item-actions">
                       <QuantityStepper
                         value={item.quantity}

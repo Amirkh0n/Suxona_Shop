@@ -19,18 +19,29 @@ body {
    edge-to-edge (a hero image flush in the browser's corner, a tab bar
    spanning 1920px). `.app-shell` caps it to a phone-width column and
    centers it instead.
-   The `transform` is doing double duty: it also makes this element the
-   containing block for every `position: fixed` descendant (tab bar, sticky
-   headers, CTA bars, the preview toast) per the CSS spec, so those re-anchor
-   to the 480px frame instead of the full browser viewport — without it,
-   a fixed CTA would still span the whole window even inside a narrow frame. */
+   This used to also carry `transform: translateZ(0)` to make it the CSS
+   containing block for every `position: fixed` descendant (tab bar, CTA
+   bars, toast), so they'd re-anchor to this 480px frame instead of the full
+   browser viewport. That fixed the *horizontal* overflow on wide desktop
+   screens, but broke the *vertical* behavior everywhere: `.app-shell` has
+   no fixed height (`min-height: 100vh`, it grows with content), so once it
+   became the containing block, "fixed, bottom: 0" descendants stuck to the
+   bottom of this ever-growing box instead of the browser viewport — on any
+   page taller than one screen (a long product list, say), the tab bar
+   ended up far below the visible area until the whole page was scrolled to
+   its end. Fixed-position elements below are now anchored to the real
+   viewport (bottom: 0 truly means the bottom of the screen) and keep the
+   480px-wide look with `left: 50%; transform: translateX(-50%); width:
+   100%; max-width: 480px` instead — centered on the same page axis as this
+   frame (`.app-shell` is itself centered via `margin: 0 auto`), so nothing
+   looks different on desktop, but they now stay pinned to the screen while
+   the page scrolls, as a bottom tab bar should. */
 .app-shell {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
   background: var(--color-bg);
   position: relative;
-  transform: translateZ(0);
 }
 @media (min-width: 540px) {
   /* No border-radius/overflow:hidden here: `.app-shell` has no fixed height
@@ -175,7 +186,9 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 /* --- Bottom tab bar (mobile customer nav) --- */
 .tabbar {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 480px;
   height: var(--tabbar-height);
   background: var(--color-surface);
   border-top: 1px solid var(--color-line);
@@ -521,14 +534,19 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 @media (max-width: 420px) {
   .category-chip-grid { grid-template-columns: repeat(4, 1fr); }
 }
-.category-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.category-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; }
 .category-chip-icon {
-  width: 52px; height: 52px;
-  border-radius: 16px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
   display: flex; align-items: center; justify-content: center;
   color: var(--color-ink);
 }
-.category-chip-icon img { width: 24px; height: 24px; object-fit: contain; }
+/* Fills the circle edge-to-edge instead of floating a small fixed-size icon
+   in the middle — this is a real photo from the backend, not a flat glyph,
+   so it needs object-fit: cover at 100% to read as a filled circle rather
+   than a square photo stranded inside a rounded box. */
+.category-chip-icon img { width: 100%; height: 100%; object-fit: cover; }
 .category-chip-label { font-size: 11px; font-weight: 600; color: var(--color-ink-soft); line-height: 1.2; }
 .chip-tone-a { background: var(--color-primary-soft); }
 .chip-tone-b { background: var(--color-info-soft); }
@@ -660,7 +678,8 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .variant-pill.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-soft); }
 
 .product-detail-cta {
-  position: fixed; left: 0; right: 0; bottom: var(--tabbar-height);
+  position: fixed; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
+  bottom: var(--tabbar-height);
   background: var(--color-surface);
   border-top: 1px solid var(--color-line);
   padding: var(--sp-3) 0;
@@ -674,7 +693,14 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .store-detail-banner { position: relative; height: 150px; background: var(--color-accent-navy); }
 .store-detail-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .store-detail-back { position: absolute; top: var(--sp-4); left: var(--sp-4); }
-.store-detail-head { text-align: center; margin-top: -40px; padding-bottom: var(--sp-2); }
+/* `position: relative` promotes .store-detail-banner into the "positioned
+   elements" paint step, which runs AFTER the "non-positioned elements" step
+   regardless of DOM order. Without z-index of its own, .store-detail-head
+   (and the avatar straddling the banner via negative margin) stayed
+   non-positioned and so painted BEFORE the banner — the banner ended up
+   drawn on top of the logo's upper half even though it comes first in the
+   markup. Giving this its own stacking position fixes the paint order. */
+.store-detail-head { position: relative; z-index: 1; text-align: center; margin-top: -40px; padding-bottom: var(--sp-2); }
 .store-detail-avatar {
   width: 80px; height: 80px; border-radius: 50%;
   background: var(--color-accent-navy); color: #fff;
@@ -709,7 +735,8 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .cart-summary-row { display: flex; justify-content: space-between; font-size: var(--fs-sm); padding: 3px 0; }
 .cart-summary-row.total { font-weight: 800; font-size: var(--fs-md); border-top: 1px solid var(--color-line); margin-top: var(--sp-2); padding-top: var(--sp-3); }
 .cart-sticky-footer {
-  position: fixed; left: 0; right: 0; bottom: var(--tabbar-height);
+  position: fixed; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
+  bottom: var(--tabbar-height);
   background: var(--color-surface); border-top: 1px solid var(--color-line);
   padding: var(--sp-3) 0; z-index: 25;
 }
@@ -740,7 +767,8 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .option-card-link { font-size: var(--fs-xs); font-weight: 700; color: var(--color-primary); flex-shrink: 0; }
 
 .checkout-footer {
-  position: fixed; left: 0; right: 0; bottom: 0;
+  position: fixed; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px;
+  bottom: 0;
   background: var(--color-surface); border-top: 1px solid var(--color-line);
   padding: var(--sp-3) 0; padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0));
   z-index: 25;
@@ -946,4 +974,53 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 /* --- Catalog search: inline spinner while debounced results load --- */
 .app-search-loading {
   position: absolute; right: var(--sp-4); top: 50%; transform: translateY(-50%);
+}
+
+/* --- Catalog tree (category browser) --- */
+.category-tree { display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-3); }
+.category-tree-branch { display: flex; flex-direction: column; gap: var(--sp-2); }
+.category-tree-children {
+  display: flex; flex-direction: column; gap: var(--sp-2); margin-top: var(--sp-2);
+  padding-left: var(--sp-3); border-left: 2px solid var(--color-line);
+  margin-left: calc(var(--sp-4) + 14px);
+}
+.category-tree-row {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+}
+.category-tree-row.category-tree-all {
+  width: 100%; border: none; cursor: pointer; font-family: inherit; text-align: left;
+  background: var(--color-primary-soft);
+}
+.category-tree-name-btn {
+  flex: 1; display: flex; align-items: center; gap: var(--sp-3); min-width: 0;
+  background: none; border: none; cursor: pointer; padding: 0; text-align: left; font-family: inherit;
+}
+.category-tree-icon {
+  width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-bg); color: var(--color-ink-soft);
+}
+.category-tree-icon img { width: 100%; height: 100%; object-fit: cover; }
+.category-tree-icon-all { background: var(--color-primary); color: #fff; }
+.category-tree-name { font-weight: 600; font-size: var(--fs-sm); color: var(--color-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.category-tree-row.category-tree-all .category-tree-name { font-weight: 700; color: var(--color-primary-dark); }
+.category-tree-chevron {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--color-bg);
+  display: flex; align-items: center; justify-content: center; color: var(--color-ink-soft); cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.category-tree-chevron:hover { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.category-tree-chevron.open { transform: rotate(90deg); }
+
+/* --- Active search term chip on the product list page --- */
+.catalog-search-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  background: var(--color-primary-soft); color: var(--color-primary-dark);
+  border-radius: var(--radius-pill); padding: 7px 8px 7px 14px;
+  font-size: var(--fs-xs); font-weight: 600; margin-bottom: var(--sp-3);
+}
+.catalog-search-chip button {
+  width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(255,255,255,0.6);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; color: inherit;
 }

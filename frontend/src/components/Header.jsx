@@ -31,7 +31,7 @@ export default function Header() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    navigate(query.trim() ? `/katalog?search=${encodeURIComponent(query.trim())}` : '/katalog');
+    navigate(query.trim() ? `/mahsulotlar?search=${encodeURIComponent(query.trim())}` : '/mahsulotlar');
   };
 
   return (

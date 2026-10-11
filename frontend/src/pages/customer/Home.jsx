@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { bannerApi, categoryApi, productApi, storeApi } from '../../api/endpoints';
+import { Link, useNavigate } from 'react-router-dom';
+import { bannerApi, productApi, storeApi } from '../../api/endpoints';
+import { fetchAllCategories, buildCategoryTree } from '../../utils/categoryTree';
 import ProductCard from '../../components/ProductCard';
 import StoreCard from '../../components/StoreCard';
 import { ProductGridSkeleton, RowSkeleton } from '../../components/Skeleton';
@@ -10,8 +11,10 @@ import { GridIcon } from '../../components/Icons';
 const CHIP_TONES = ['chip-tone-a', 'chip-tone-b', 'chip-tone-c', 'chip-tone-d', 'chip-tone-e'];
 
 export default function Home() {
+  const navigate = useNavigate();
   const [banners, setBanners] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [categoryTree, setCategoryTree] = useState(null);
   const [stores, setStores] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,21 +22,36 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [bannersRes, categoriesRes, storesRes, productsRes] = await Promise.all([
+      const [bannersRes, allCategories, storesRes, productsRes] = await Promise.all([
         bannerApi.list().catch(() => ({ data: [] })),
-        categoryApi.list().catch(() => ({ data: { results: [] } })),
+        fetchAllCategories().catch(() => []),
         storeApi.list({ page: 1 }).catch(() => ({ data: { results: [] } })),
         productApi.list({ page: 1 }).catch(() => ({ data: { results: [] } })),
       ]);
       if (cancelled) return;
+      const tree = buildCategoryTree(allCategories);
+      setCategoryTree(tree);
       setBanners(bannersRes.data || []);
-      setCategories((categoriesRes.data?.results || []).filter((c) => !c.parent).slice(0, 10));
+      setCategories(tree.roots.slice(0, 10));
       setStores((storesRes.data?.results || []).slice(0, 6));
       setProducts((productsRes.data?.results || []).slice(0, 8));
       setLoading(false);
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // A top-level category shown here may have sub-categories (the home grid
+  // only ever shows the parents), so this follows the same "category + all
+  // its descendants" rule as the catalog tree page rather than only ever
+  // linking to the parent's own (possibly empty) direct products.
+  const openCategory = (cat) => {
+    if (categoryTree?.hasChildren(cat.id)) {
+      const ids = categoryTree.descendantIds(cat.id);
+      navigate(`/mahsulotlar?categories=${ids.join(',')}`, { state: { categoryName: cat.name } });
+    } else {
+      navigate(`/mahsulotlar?category=${cat.id}`, { state: { categoryName: cat.name } });
+    }
+  };
 
   if (loading) {
     return (
@@ -67,12 +85,12 @@ export default function Home() {
         <section style={{ marginTop: 'var(--sp-6)' }}>
           <div className="category-chip-grid">
             {categories.map((cat, i) => (
-              <Link key={cat.id} to={`/katalog?category=${cat.id}`} className="category-chip">
+              <button key={cat.id} type="button" onClick={() => openCategory(cat)} className="category-chip">
                 <span className={`category-chip-icon ${CHIP_TONES[i % CHIP_TONES.length]}`}>
                   {cat.icon ? <img src={resolveImageUrl(cat.icon)} alt="" /> : <GridIcon width={20} height={20} />}
                 </span>
                 <span className="category-chip-label">{cat.name}</span>
-              </Link>
+              </button>
             ))}
           </div>
         </section>
@@ -81,7 +99,7 @@ export default function Home() {
       <section style={{ marginTop: 'var(--sp-7)' }}>
         <div className="section-heading">
           <h2>Tavsiya etilgan do'konlar</h2>
-          <Link to="/katalog" className="section-heading-link">Barchasi</Link>
+          <Link to="/mahsulotlar" className="section-heading-link">Barchasi</Link>
         </div>
         {stores.length === 0 ? (
           <div className="empty-state card"><h3>Hozircha do'konlar yo'q</h3></div>
@@ -95,7 +113,7 @@ export default function Home() {
       <section style={{ marginTop: 'var(--sp-7)' }}>
         <div className="section-heading">
           <h2>Yangi mahsulotlar</h2>
-          <Link to="/katalog" className="section-heading-link">Barchasi</Link>
+          <Link to="/mahsulotlar" className="section-heading-link">Barchasi</Link>
         </div>
         {products.length === 0 ? (
           <div className="empty-state card"><h3>Hozircha mahsulot yo'q</h3></div>

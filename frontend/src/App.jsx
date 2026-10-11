@@ -7,6 +7,7 @@ import { PageSpinner } from './components/Spinner';
 import Home from './pages/customer/Home';
 import Login from './pages/customer/Login';
 import Register from './pages/customer/Register';
+import Catalog from './pages/customer/Catalog';
 import ProductList from './pages/customer/ProductList';
 import ProductDetail from './pages/customer/ProductDetail';
 import StoreDetail from './pages/customer/StoreDetail';
@@ -44,7 +45,7 @@ export default function App() {
       {/* Main tab pages: header + search + bottom tab bar */}
       <Route element={<ShopLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/katalog" element={<ProductList />} />
+        <Route path="/katalog" element={<Catalog />} />
         <Route path="/savat" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
         <Route path="/buyurtmalarim" element={<ProtectedRoute><OrderList /></ProtectedRoute>} />
         <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -52,6 +53,7 @@ export default function App() {
 
       {/* Secondary screens: own PageHeader/topbar, tab bar stays for quick nav */}
       <Route element={<BareLayout />}>
+        <Route path="/mahsulotlar" element={<ProductList />} />
         <Route path="/mahsulot/:productId" element={<ProductDetail />} />
         <Route path="/dokon/:storeId" element={<StoreDetail />} />
         <Route path="/buyurtma/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />

@@ -54,7 +54,7 @@ export default function ProductDetail() {
       <div className="container page">
         <div className="empty-state card">
           <h3>Mahsulot topilmadi</h3>
-          <Link to="/katalog" className="btn btn-outline">Katalogga qaytish</Link>
+          <Link to="/mahsulotlar" className="btn btn-outline">Mahsulotlarga qaytish</Link>
         </div>
       </div>
     );
