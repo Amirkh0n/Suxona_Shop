@@ -6,9 +6,9 @@ import BottomTabBar from './BottomTabBar';
 // fixed CTAs). On a wide desktop viewport that layout would otherwise
 // stretch edge-to-edge — a hero image flush against the browser's top-left
 // corner, a tab bar spanning 1920px. `.app-shell` centers it as a fixed-width
-// "device frame" instead; see the CSS comment above `.app-shell` for how it
-// also re-anchors `position: fixed` children (tab bar, sticky CTAs) to the
-// frame instead of the full viewport.
+// "device frame" instead (width only — see the CSS comment above
+// `.app-shell` for why its fixed-position children, like the tab bar, are
+// anchored to the real viewport rather than to this element).
 function AppShell({ children }) {
   return <div className="app-shell">{children}</div>;
 }

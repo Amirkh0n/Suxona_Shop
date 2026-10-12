@@ -123,6 +123,17 @@ Dastlabki versiyadan keyin, real loyiha sifatida qo'yilishi uchun quyidagilar qo
   bo'lib qolayotgan edi (`object-fit: contain` 24×24 o'lchamda, doira esa
   56×56 — fon rangi atrofida qolib ketardi). Endi rasm doirani to'liq
   qoplaydi (`object-fit: cover`, 100%×100%, `overflow: hidden`).
+- **Loyiha logotipi almashtirildi** — foydalanuvchi tomonidan yuklangan
+  asl logotip (`S` harfi + barg, yashil gradient) `public/` papkasidagi
+  avvalgi vaqtinchalik ikonkalarning o'rnini bosdi: `favicon.ico`
+  (16/32/48px, ko'p o'lchamli), `favicon.png` (32×32, zamonaviy brauzerlar
+  uchun), `icon-192.png`/`icon-512.png` (shaffof fon, PWA "any" maqsadi),
+  `icon-192-maskable.png`/`icon-512-maskable.png` (xavfsiz zonaga mos
+  qo'shimcha hoshiya bilan, fon rangi `#16A34A` — Android maskable ikonkalar
+  uchun) va `apple-touch-icon.png` (180×180, fon `#16A34A` bilan to'ldirilgan,
+  chunki iOS shaffoflikni qora rangga aylantiradi). Eski `favicon.svg` va
+  ishlatilmayotgan `icons.svg` o'chirildi; `manifest.json` va `index.html`
+  shu fayllarga mos yangilandi.
 
 ## Nima UI-only (backendga ulanmagan)
 
