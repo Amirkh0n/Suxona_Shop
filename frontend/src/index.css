@@ -74,7 +74,12 @@ h3 { font-size: var(--fs-md); }
 
 p { margin: 0 0 var(--sp-3); color: var(--color-ink-soft); }
 a { color: inherit; text-decoration: none; }
-button, input, select, textarea { font-family: inherit; font-size: inherit; }
+/* Browsers don't inherit text color into form controls by default (only
+   font-family/size), so a <button> styled to look like plain text — like
+   the dark-mode toggle row on the profile page — stays stuck on the
+   platform's default black instead of following --color-ink into dark
+   mode. `color: inherit` fixes that for every button/input in one place. */
+button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
 
 :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 
@@ -319,7 +324,9 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
   align-items: center;
   gap: 8px;
   font-weight: 800;
-  font-size: var(--fs-md);
+  /* --fs-md (17px) + 2px, set directly here rather than bumping the shared
+     token, since --fs-md is also used for prices, h3s, etc. elsewhere. */
+  font-size: 1.1875rem;
   flex-shrink: 0;
 }
 .app-logo-mark {
@@ -329,6 +336,7 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
   flex-shrink: 0;
   display: block;
 }
+.app-logo-accent { color: var(--color-primary); }
 .app-location {
   display: flex;
   align-items: center;
@@ -359,7 +367,7 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
   display: flex;
   align-items: center;
 }
-.app-search-icon { position: absolute; left: 14px; color: var(--color-ink-soft); pointer-events: none; }
+.app-search-icon { position: absolute; left: 18px; color: var(--color-ink-soft); pointer-events: none; }
 .app-search input {
   width: 100%;
   padding: 12px 14px 12px 42px;

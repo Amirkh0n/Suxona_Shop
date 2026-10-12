@@ -142,6 +142,22 @@ Dastlabki versiyadan keyin, real loyiha sifatida qo'yilishi uchun quyidagilar qo
     (180×180, yashil fon bilan — iOS shaffoflikni qora rangga aylantiradi).
   - Eski `favicon.svg` va ishlatilmayotgan `icons.svg` o'chirilgan edi;
     `manifest.json` va `index.html` shu fayllarga mos.
+- **"SuxonaShop" yozuvi** — yuqori bar va sotuvchi panelidagi nom endi 2px
+  kattaroq (`--fs-md` 17px o'rniga 19px, faqat shu joyda — umumiy tokenni
+  o'zgartirmadik, chunki u narx va h3 kabi boshqa joylarda ham ishlatiladi)
+  va "Shop" qismi brend yashil rangida (`.app-logo-accent`).
+- **Qorong'i rejimda "Qorong'i rejim" yozuvi qop-qora bo'lib qolayotgan
+  edi** — sabab: brauzerlar `<button>`, `<input>` kabi forma elementlariga
+  matn rangini avtomatik meros qilib bermaydi (faqat shrift oilasi/o'lchamini
+  beradi), shu uchun profil sahifasidagi tungi rejim tugmasi (u oddiy matn
+  kabi ko'rinadigan `<button>`) qorong'i rejimda ham brauzerning standart
+  qora rangida qolib ketardi. `button, input, select, textarea`ga
+  `color: inherit` qo'shilib, global tuzatildi — bu xuddi shu sababdan
+  kelib chiqishi mumkin bo'lgan boshqa joylardagi (masalan, input matni)
+  shunga o'xshash muammolarning oldini ham oladi.
+- **Qidiruv input ichidagi lupa belgisi** — `left: 14px`dan `left: 18px`ga
+  ko'chirildi (matn boshlanishi hali ham 42px padding ichida, bosilib
+  qolmaydi).
 
 ## Nima UI-only (backendga ulanmagan)
 

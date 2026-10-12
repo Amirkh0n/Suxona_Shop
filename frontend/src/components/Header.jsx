@@ -40,7 +40,7 @@ export default function Header() {
       <div className="container app-header-top">
         <Link to="/" className="app-logo">
           <img src={logo} alt="" className="app-logo-mark" />
-          <span>SuxonaShop</span>
+          <span>Suxona<span className="app-logo-accent">Shop</span></span>
         </Link>
 
         <Link to="/profil/manzillar" className="app-location">

@@ -23,7 +23,7 @@ export default function SellerLayout() {
       <aside className="seller-sidebar">
         <Link to="/" className="app-logo" style={{ padding: '0 var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
           <img src={logo} alt="" className="app-logo-mark" />
-          <span className="nav-label-full">SuxonaShop</span>
+          <span className="nav-label-full">Suxona<span className="app-logo-accent">Shop</span></span>
         </Link>
 
         {NAV.map(({ to, label, Icon, end }) => (
