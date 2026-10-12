@@ -2,6 +2,7 @@ import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePreviewNotice } from '../../context/PreviewNoticeContext';
 import { STORE_STATUS_LABELS } from '../../utils/format';
+import logo from '../../assets/logo.png';
 import {
   HomeIcon, PackageIcon, ReceiptIcon, UsersIcon, ChartIcon, SettingsIcon, StoreIcon,
 } from '../../components/Icons';
@@ -21,7 +22,7 @@ export default function SellerLayout() {
     <div className="seller-shell">
       <aside className="seller-sidebar">
         <Link to="/" className="app-logo" style={{ padding: '0 var(--sp-3)', marginBottom: 'var(--sp-4)' }}>
-          <span className="app-logo-mark">S</span>
+          <img src={logo} alt="" className="app-logo-mark" />
           <span className="nav-label-full">SuxonaShop</span>
         </Link>
 

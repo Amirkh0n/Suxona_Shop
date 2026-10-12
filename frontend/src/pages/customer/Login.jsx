@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { extractErrorMessage } from '../../api/client';
+import logo from '../../assets/logo.png';
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,7 +30,7 @@ export default function Login() {
 
   return (
     <div className="container page auth-page">
-      <div className="app-logo-mark auth-mark">S</div>
+      <img src={logo} alt="SuxonaShop" className="app-logo-mark auth-mark" />
       <h1>Xush kelibsiz</h1>
       <p style={{ marginBottom: 'var(--sp-5)' }}>Hisobingizga kiring va xaridni davom ettiring.</p>
 

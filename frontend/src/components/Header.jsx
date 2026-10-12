@@ -4,6 +4,7 @@ import { SearchIcon, BellIcon, PinIcon } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import { usePreviewNotice } from '../context/PreviewNoticeContext';
 import { addressApi } from '../api/endpoints';
+import logo from '../assets/logo.png';
 
 export default function Header() {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ export default function Header() {
     <header className="app-header">
       <div className="container app-header-top">
         <Link to="/" className="app-logo">
-          <span className="app-logo-mark">S</span>
+          <img src={logo} alt="" className="app-logo-mark" />
           <span>SuxonaShop</span>
         </Link>
 

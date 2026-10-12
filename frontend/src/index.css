@@ -325,14 +325,9 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .app-logo-mark {
   width: 30px;
   height: 30px;
-  border-radius: 9px;
-  background: var(--color-primary);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-sans);
-  font-weight: 800;
+  object-fit: contain;
+  flex-shrink: 0;
+  display: block;
 }
 .app-location {
   display: flex;
@@ -502,7 +497,7 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 
 /* --- Auth pages --- */
 .auth-page { max-width: 420px; padding-top: var(--sp-7); }
-.auth-mark { width: 52px; height: 52px; border-radius: 16px; font-size: 1.4rem; margin-bottom: var(--sp-4); }
+.auth-mark { width: 52px; height: 52px; margin-bottom: var(--sp-4); }
 
 /* --- Home: banner --- */
 .home-banner-scroll { display: flex; gap: var(--sp-3); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 2px; }
