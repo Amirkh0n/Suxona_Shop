@@ -6,7 +6,6 @@ from .register_user import RegisterUserService
 from .update_address import UpdateAddressService
 from .verify_telegram_registration import VerifyTelegramRegistrationService
 
-
 __all__ = [
     "AuthenticateUserService",
     "CreateAddressService",

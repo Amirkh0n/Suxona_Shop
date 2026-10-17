@@ -38,6 +38,7 @@ def _telegram_deeplink(token: str) -> str:
 @extend_schema(tags=["Auth"])
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "auth"
 
     @extend_schema(
         summary="Register a new user",
@@ -76,6 +77,7 @@ class RegisterView(APIView):
 @extend_schema(tags=["Auth"])
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_scope = "auth"
 
     @extend_schema(
         summary="Obtain JWT tokens",

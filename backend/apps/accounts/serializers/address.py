@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.accounts.models import Address
+
 # Cross-app import: target the leaf module (not apps.stores.serializers) to
 # keep the import graph acyclic. Do not change to the package __init__.
 from apps.stores.serializers.village import VillageSerializer

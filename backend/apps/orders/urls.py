@@ -15,7 +15,6 @@ from apps.orders.views import (
     SellerOrderListView,
 )
 
-
 app_name = "orders"
 
 urlpatterns = [

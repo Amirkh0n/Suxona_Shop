@@ -9,7 +9,6 @@ from .update_delivery_zone import UpdateDeliveryZoneService
 from .update_store import UpdateStoreService
 from .update_village import UpdateVillageService
 
-
 __all__ = [
     "ApproveStoreService",
     "CreateDeliveryZoneService",

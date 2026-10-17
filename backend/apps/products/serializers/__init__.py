@@ -21,7 +21,6 @@ from .product_variant import (
     ProductVariantUpdateSerializer,
 )
 
-
 __all__ = [
     "CategoryCreateSerializer",
     "CategorySerializer",

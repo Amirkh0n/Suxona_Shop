@@ -13,7 +13,6 @@ from apps.products.views import (
     ProductVariantListCreateView,
 )
 
-
 app_name = "products"
 
 urlpatterns = [

@@ -28,9 +28,25 @@ class CreateStoreApplicationService:
         if has_pending_application:
             raise PendingStoreApplicationExistsError()
 
-        return StoreApplication.objects.create(
+        application = StoreApplication.objects.create(
             owner=owner,
             store_name=store_name,
             phone=phone,
             status=StoreApplicationStatus.PENDING,
         )
+
+        # Let admins know right away (no-op unless TELEGRAM_ADMIN_CHAT_ID is
+        # set); deferred to commit so a rolled-back application isn't announced.
+        def _notify_admins() -> None:
+            from apps.notifications.telegram.services import (
+                notify_admins_new_store_application,
+            )
+
+            notify_admins_new_store_application(
+                store_name=application.store_name,
+                owner_phone=owner.phone,
+            )
+
+        transaction.on_commit(_notify_admins)
+
+        return application

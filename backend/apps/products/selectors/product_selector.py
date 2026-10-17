@@ -3,7 +3,6 @@ from django.db.models import Prefetch, Q, QuerySet
 from apps.common.enums import ProductStatus
 from apps.products.models import Product, ProductVariant
 
-
 VARIANT_PREFETCH = Prefetch(
     "variants",
     queryset=ProductVariant.objects.select_related("product"),

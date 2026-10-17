@@ -11,7 +11,6 @@ from .product_image import (
 )
 from .product_variant import ProductVariantDetailView, ProductVariantListCreateView
 
-
 __all__ = [
     "CategoryDetailView",
     "CategoryListCreateView",
@@ -24,7 +23,6 @@ __all__ = [
     "ProductVariantDetailView",
     "ProductVariantListCreateView",
 ]
-from .product_variant import ProductVariantDetailView, ProductVariantListCreateView
 
 
 __all__ = ["ProductVariantDetailView", "ProductVariantListCreateView"]

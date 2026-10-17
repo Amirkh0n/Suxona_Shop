@@ -19,6 +19,16 @@ class StoreApplication(BaseModel):
         default=StoreApplicationStatus.PENDING,
     )
     admin_note = models.TextField(blank=True)
+    # Audit trail: who actioned this application and when. Nullable because
+    # every existing row (and every still-pending one) has neither yet.
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_store_applications",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [

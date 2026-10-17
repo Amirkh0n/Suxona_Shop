@@ -13,7 +13,6 @@ from .seller_order import (
     SellerOrderListView,
 )
 
-
 __all__ = [
     "CartItemCreateView",
     "CartItemDetailView",

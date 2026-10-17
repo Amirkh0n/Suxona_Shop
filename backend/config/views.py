@@ -2,7 +2,6 @@ from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
-
 HOME_PAGE = """<!doctype html>
 <html lang="en">
 <head>

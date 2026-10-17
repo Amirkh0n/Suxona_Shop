@@ -9,7 +9,6 @@ from .mark_delivering import MarkDeliveringService
 from .reject_order import RejectOrderService
 from .update_cart_item import UpdateCartItemService
 
-
 __all__ = [
     "AcceptOrderService",
     "AddCartItemService",

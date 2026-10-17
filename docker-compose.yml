@@ -1,26 +1,47 @@
+# Copy .env.example to .env and fill in real values before `docker compose up`.
 services:
   backend:
     build:
       context: .
       dockerfile: docker/backend/Dockerfile
-    command: uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    command: sh -c "uv run python manage.py migrate --noinput && uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     env_file:
-      - .env.example
+      - .env
+    environment:
+      POSTGRES_HOST: db
     ports:
       - "8000:8000"
     depends_on:
-      - db
-    volumes:
-      - ./backend:/app/backend
+      db:
+        condition: service_healthy
+
+  # Telegram bot (long polling): handles /start verify_<token> and sends
+  # store-application notifications' companion commands.
+  bot:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    command: uv run python manage.py run_telegram_bot
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: suxonashop
-      POSTGRES_USER: suxonashop
-      POSTGRES_PASSWORD: suxonashop
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-suxonashop}
+      POSTGRES_USER: ${POSTGRES_USER:-suxonashop}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-suxonashop}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-suxonashop}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

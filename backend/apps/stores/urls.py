@@ -15,7 +15,6 @@ from apps.stores.views import (
     VillageListView,
 )
 
-
 app_name = "stores"
 
 urlpatterns = [

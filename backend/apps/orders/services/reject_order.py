@@ -3,6 +3,7 @@ from django.db import transaction
 from apps.common.enums import OrderStatus
 from apps.orders.exceptions import InvalidOrderStatusError, OrderNotFound
 from apps.orders.models import Order
+from apps.orders.services.restock import restock_order_items
 
 
 class RejectOrderService:
@@ -21,5 +22,6 @@ class RejectOrderService:
         if reason:
             order.note = reason
         order.save(update_fields=["status", "note", "updated_at"])
+        restock_order_items(order)
 
         return order

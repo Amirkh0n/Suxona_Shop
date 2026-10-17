@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.orders.models import CartItem
+
 # Cross-app import: target the leaf module (not apps.products.serializers) to
 # keep the import graph acyclic. Do not change to the package __init__.
 from apps.products.serializers.product import ProductListSerializer

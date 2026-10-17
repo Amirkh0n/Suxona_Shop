@@ -14,7 +14,6 @@ from .user import (
     UserDetailSerializer,
 )
 
-
 __all__ = [
     "AddressCreateSerializer",
     "AddressDetailSerializer",

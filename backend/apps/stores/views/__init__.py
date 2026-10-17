@@ -12,7 +12,6 @@ from .store_application import (
 )
 from .village import VillageDetailView, VillageListView
 
-
 __all__ = [
     "DeliveryZoneCreateView",
     "DeliveryZoneDetailView",

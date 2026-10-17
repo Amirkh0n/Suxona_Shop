@@ -1,6 +1,7 @@
 from django.db import transaction
 
 from apps.accounts.models import User
+from apps.common.enums import ProductStatus
 from apps.orders.exceptions import (
     CartItemNotFound,
     InsufficientStockError,
@@ -10,7 +11,6 @@ from apps.orders.exceptions import (
     ProductVariantNotPurchasable,
 )
 from apps.orders.models import CartItem
-from apps.common.enums import ProductStatus
 
 
 class UpdateCartItemService:

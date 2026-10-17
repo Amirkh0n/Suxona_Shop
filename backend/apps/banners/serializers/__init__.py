@@ -5,7 +5,6 @@ from .banner import (
     BannerUpdateSerializer,
 )
 
-
 __all__ = [
     "BannerCreateSerializer",
     "BannerDetailSerializer",

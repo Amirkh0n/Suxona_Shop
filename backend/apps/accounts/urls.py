@@ -12,7 +12,6 @@ from apps.accounts.views import (
     TelegramVerifyView,
 )
 
-
 app_name = "accounts"
 
 urlpatterns = [

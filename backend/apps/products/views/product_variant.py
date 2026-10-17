@@ -6,7 +6,6 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsStoreOwner
-from apps.common.schema import DetailSerializer
 from apps.products.exceptions import (
     DuplicateProductVariantError,
     NotProductOwnerError,

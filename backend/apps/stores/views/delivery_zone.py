@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
-from apps.common.permissions import IsSeller, IsAuthenticatedUser
+from apps.common.permissions import IsAuthenticatedUser, IsSeller
 from apps.common.schema import DetailSerializer
 from apps.stores.exceptions import (
     DeliveryZoneNotFound,

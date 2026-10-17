@@ -5,6 +5,7 @@ from apps.products.models import Product
 from apps.products.serializers.category import CategorySerializer
 from apps.products.serializers.product_image import ProductImageSerializer
 from apps.products.serializers.product_variant import ProductVariantSerializer
+
 # Cross-app import: target the leaf module (not apps.stores.serializers) to
 # keep the import graph acyclic. Do not change to the package __init__.
 from apps.stores.serializers.store import StoreListSerializer

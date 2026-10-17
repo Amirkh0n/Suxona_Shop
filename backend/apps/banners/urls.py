@@ -2,7 +2,6 @@ from django.urls import path
 
 from apps.banners.views import BannerDetailView, BannerListCreateView
 
-
 app_name = "banners"
 
 urlpatterns = [

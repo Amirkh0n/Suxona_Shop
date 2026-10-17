@@ -60,7 +60,9 @@ def render_status_badge(value: str, color_map: dict[str, str], display: str | No
     return render_badge(display or value, color)
 
 
-def render_bool_badge(value: bool, true_label: str = "Active", false_label: str = "Inactive") -> str:
+def render_bool_badge(
+    value: bool, true_label: str = "Active", false_label: str = "Inactive"
+) -> str:
     """Render a boolean as a green/red badge."""
     if value:
         return render_badge(true_label, "#10b981")

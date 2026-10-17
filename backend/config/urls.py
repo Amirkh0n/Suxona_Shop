@@ -12,6 +12,9 @@ from drf_spectacular.views import (
 
 from config.views import home
 
+admin.site.site_header = "SuxonaShop boshqaruv paneli"
+admin.site.site_title = "SuxonaShop Admin"
+admin.site.index_title = "Platforma boshqaruvi"
 
 urlpatterns = [
     path("", home, name="home"),

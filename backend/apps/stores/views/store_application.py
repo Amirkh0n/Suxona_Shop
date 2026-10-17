@@ -92,7 +92,7 @@ class ApproveStoreApplicationView(APIView):
             )
 
         try:
-            ApproveStoreService.execute(application=application)
+            ApproveStoreService.execute(application=application, reviewed_by=request.user)
         except ServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -130,6 +130,7 @@ class RejectStoreApplicationView(APIView):
         try:
             application = RejectStoreService.execute(
                 application=application,
+                reviewed_by=request.user,
                 **serializer.validated_data,
             )
         except ServiceError as exc:

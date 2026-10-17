@@ -12,7 +12,6 @@ from .order import (
 )
 from .order_item import OrderItemSerializer
 
-
 __all__ = [
     "CartSerializer",
     "CartStoreGroupSerializer",

@@ -1,5 +1,7 @@
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
+from apps.accounts.models import User
 from apps.common.enums import StoreApplicationStatus, StoreStatus
 from apps.stores.exceptions import (
     InvalidStoreApplicationStatusError,
@@ -12,7 +14,7 @@ from apps.stores.models import Store, StoreApplication
 class ApproveStoreService:
     @staticmethod
     @transaction.atomic
-    def execute(*, application: StoreApplication) -> Store:
+    def execute(*, application: StoreApplication, reviewed_by: User | None = None) -> Store:
         try:
             application = StoreApplication.objects.select_for_update().get(
                 pk=application.pk,
@@ -39,6 +41,25 @@ class ApproveStoreService:
             raise UserAlreadyHasStoreError() from exc
 
         application.status = StoreApplicationStatus.APPROVED
-        application.save(update_fields=["status", "updated_at"])
+        application.reviewed_by = reviewed_by
+        application.reviewed_at = timezone.now()
+        application.save(
+            update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"],
+        )
+
+        # Sent only once the transaction actually commits: if anything above
+        # rolls back, the applicant must not get a "congratulations" message
+        # for a store that was never created.
+        def _notify() -> None:
+            from apps.notifications.telegram.services import (
+                notify_store_application_approved,
+            )
+
+            notify_store_application_approved(
+                owner=application.owner,
+                store_name=store.name,
+            )
+
+        transaction.on_commit(_notify)
 
         return store

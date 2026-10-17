@@ -20,7 +20,6 @@ from .village import (
     VillageUpdateSerializer,
 )
 
-
 __all__ = [
     "DeliveryZoneCreateSerializer",
     "DeliveryZoneListSerializer",

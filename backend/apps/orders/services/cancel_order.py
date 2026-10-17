@@ -8,6 +8,7 @@ from apps.orders.exceptions import (
     OrderNotFound,
 )
 from apps.orders.models import Order
+from apps.orders.services.restock import restock_order_items
 
 
 class CancelOrderService:
@@ -35,5 +36,6 @@ class CancelOrderService:
 
         locked.status = OrderStatus.CANCELLED
         locked.save(update_fields=["status", "updated_at"])
+        restock_order_items(locked)
 
         return locked

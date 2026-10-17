@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.http import HttpResponseRedirect
 
 from apps.common.admin import (
     STORE_APPLICATION_STATUS_COLORS,
@@ -79,23 +80,35 @@ class StoreApplicationAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
     list_per_page = 50
-    list_select_related = ("owner",)
+    list_select_related = ("owner", "reviewed_by")
+    change_form_template = "admin/stores/storeapplication/change_form.html"
 
     list_display = (
         "store_name",
         "owner",
         "phone",
         "status_badge",
+        "reviewed_by",
+        "reviewed_at",
         "created_at",
     )
     list_filter = ("status",)
     search_fields = ("store_name", "owner__phone")
     autocomplete_fields = ("owner",)
-    readonly_fields = ("created_at", "updated_at")
+    # Status/review fields are only ever changed through the approve/reject
+    # services (so a Store is created and the applicant is notified); editing
+    # them by hand in the form would bypass all of that.
+    readonly_fields = (
+        "status",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
 
     fieldsets = (
         (None, {"fields": ("owner", "store_name", "phone", "status")}),
-        ("Review", {"fields": ("admin_note",)}),
+        ("Review", {"fields": ("admin_note", "reviewed_by", "reviewed_at")}),
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
 
@@ -109,63 +122,94 @@ class StoreApplicationAdmin(admin.ModelAdmin):
             obj.get_status_display(),
         )
 
-    @admin.action(description="Approve selected applications")
-    def approve_applications(self, request, queryset):
-        # Delegate to the domain service so the Store is created and all
-        # business rules (race conditions, duplicate stores) are enforced.
+    # -- single-object buttons on the change page ---------------------------
+    def response_change(self, request, obj):
+        if "_approve" in request.POST:
+            self._approve(request, obj)
+            return HttpResponseRedirect(request.path)
+        if "_reject" in request.POST:
+            # Persist the note typed into the form before rejecting, so the
+            # applicant is told the reason the admin just wrote.
+            self._reject(request, obj, admin_note=obj.admin_note)
+            return HttpResponseRedirect(request.path)
+        return super().response_change(request, obj)
+
+    def _approve(self, request, application) -> bool:
         from apps.common.exceptions import ServiceError
         from apps.stores.services import ApproveStoreService
 
+        try:
+            ApproveStoreService.execute(application=application, reviewed_by=request.user)
+        except ServiceError as exc:
+            self.message_user(request, f"{application.store_name}: {exc}", level=messages.ERROR)
+            return False
+        self.message_user(request, f"«{application.store_name}» approved — store created.")
+        return True
+
+    def _reject(self, request, application, admin_note: str = "") -> bool:
+        from apps.common.exceptions import ServiceError
+        from apps.stores.services import RejectStoreService
+
+        try:
+            RejectStoreService.execute(
+                application=application,
+                admin_note=admin_note,
+                reviewed_by=request.user,
+            )
+        except ServiceError as exc:
+            self.message_user(request, f"{application.store_name}: {exc}", level=messages.ERROR)
+            return False
+        self.message_user(request, f"«{application.store_name}» rejected.")
+        return True
+
+    # -- bulk actions -------------------------------------------------------
+    @admin.action(description="Approve selected applications")
+    def approve_applications(self, request, queryset):
         pending = queryset.filter(status=StoreApplicationStatus.PENDING)
         skipped = queryset.count() - pending.count()
-
-        approved = 0
-        for application in pending:
-            try:
-                ApproveStoreService.execute(application=application)
-                approved += 1
-            except ServiceError as exc:
-                self.message_user(
-                    request,
-                    f"{application.store_name}: {exc}",
-                    level="error",
-                )
+        approved = sum(1 for application in pending if self._approve_quiet(request, application))
         if approved:
             self.message_user(request, f"{approved} application(s) approved.")
         if skipped:
             self.message_user(
-                request,
-                f"{skipped} non-pending application(s) skipped.",
-                level="warning",
+                request, f"{skipped} non-pending application(s) skipped.", level=messages.WARNING
             )
 
     @admin.action(description="Reject selected applications")
     def reject_applications(self, request, queryset):
-        from apps.common.exceptions import ServiceError
-        from apps.stores.services import RejectStoreService
-
         pending = queryset.filter(status=StoreApplicationStatus.PENDING)
         skipped = queryset.count() - pending.count()
-
-        rejected = 0
-        for application in pending:
-            try:
-                RejectStoreService.execute(application=application)
-                rejected += 1
-            except ServiceError as exc:
-                self.message_user(
-                    request,
-                    f"{application.store_name}: {exc}",
-                    level="error",
-                )
+        rejected = sum(
+            1 for application in pending if self._reject_quiet(request, application)
+        )
         if rejected:
             self.message_user(request, f"{rejected} application(s) rejected.")
         if skipped:
             self.message_user(
-                request,
-                f"{skipped} non-pending application(s) skipped.",
-                level="warning",
+                request, f"{skipped} non-pending application(s) skipped.", level=messages.WARNING
             )
+
+    def _approve_quiet(self, request, application) -> bool:
+        from apps.common.exceptions import ServiceError
+        from apps.stores.services import ApproveStoreService
+
+        try:
+            ApproveStoreService.execute(application=application, reviewed_by=request.user)
+            return True
+        except ServiceError as exc:
+            self.message_user(request, f"{application.store_name}: {exc}", level=messages.ERROR)
+            return False
+
+    def _reject_quiet(self, request, application) -> bool:
+        from apps.common.exceptions import ServiceError
+        from apps.stores.services import RejectStoreService
+
+        try:
+            RejectStoreService.execute(application=application, reviewed_by=request.user)
+            return True
+        except ServiceError as exc:
+            self.message_user(request, f"{application.store_name}: {exc}", level=messages.ERROR)
+            return False
 
 
 @admin.register(Village)
