@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { categoryApi, productApi } from '../../api/endpoints';
+import { categoryApi, productApi, variantApi } from '../../api/endpoints';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import { variantLabel } from '../../utils/variants';
 import { extractErrorMessage } from '../../api/client';
 import { resolveImageUrl } from '../../utils/media';
 import { PageSpinner } from '../../components/Spinner';
@@ -22,6 +24,8 @@ export default function SellerProductForm() {
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', stock: '', status: 'ACTIVE' });
   const [images, setImages] = useState([]);
+  const [variants, setVariants] = useState([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -45,6 +49,7 @@ export default function SellerProductForm() {
         status: data.status || 'ACTIVE',
       });
       setImages(data.images || []);
+      setVariants(data.variants || []);
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [productId, isEdit]);
@@ -148,6 +153,16 @@ export default function SellerProductForm() {
   };
   const onTileDragEnd = () => { setDragId(null); setDragOverId(null); };
 
+  const onDeleteProduct = async () => {
+    setConfirmDelete(false);
+    try {
+      await productApi.remove(productId);
+      navigate('/sotuvchi/mahsulotlar', { replace: true });
+    } catch (err) {
+      setError(extractErrorMessage(err, "Mahsulotni o'chirib bo'lmadi."));
+    }
+  };
+
   if (loading) return <PageSpinner />;
 
   return (
@@ -230,6 +245,169 @@ export default function SellerProductForm() {
           {saving ? 'Saqlanmoqda...' : isEdit ? "O'zgarishlarni saqlash" : 'Mahsulotni yaratish'}
         </button>
       </form>
+
+      {isEdit && (
+        <VariantsEditor
+          productId={productId}
+          variants={variants}
+          setVariants={setVariants}
+          onError={setError}
+        />
+      )}
+
+      {isEdit && (
+        <>
+          <button
+            type="button"
+            className="btn btn-danger-outline btn-block"
+            style={{ marginTop: 'var(--sp-6)' }}
+            onClick={() => setConfirmDelete(true)}
+          >
+            Mahsulotni o'chirish
+          </button>
+          <ConfirmDialog
+            open={confirmDelete}
+            title="Mahsulotni o'chirasizmi?"
+            message="Mahsulot va uning rasmlari/variantlari butunlay o'chadi."
+            confirmLabel="Ha, o'chirish"
+            onConfirm={onDeleteProduct}
+            onCancel={() => setConfirmDelete(false)}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+
+// Variants: each has a SKU, free-form attributes (rang/o'lcham/...), optional
+// own price (falls back to the product price) and its own stock. When a
+// product has variants, buyers must pick one, so stock lives on the variant.
+const EMPTY_VARIANT = { sku: '', attrs: [{ key: '', value: '' }], price: '', stock: '', is_active: true };
+
+function toForm(v) {
+  const attrs = Object.entries(v.attributes || {}).map(([key, value]) => ({ key, value: String(value) }));
+  return {
+    sku: v.sku,
+    attrs: attrs.length ? attrs : [{ key: '', value: '' }],
+    price: v.price ?? '',
+    stock: v.stock ?? '',
+    is_active: v.is_active,
+  };
+}
+
+function toPayload(f) {
+  const attributes = {};
+  f.attrs.forEach(({ key, value }) => {
+    if (key.trim() && value.trim()) attributes[key.trim()] = value.trim();
+  });
+  return {
+    sku: f.sku.trim(),
+    attributes,
+    price: f.price === '' ? null : f.price,
+    stock: f.stock === '' ? null : Number(f.stock),
+    is_active: f.is_active,
+  };
+}
+
+function VariantForm({ initial, onSave, onCancel, saving }) {
+  const [f, setF] = useState(initial);
+  const setAttr = (i, field, val) =>
+    setF({ ...f, attrs: f.attrs.map((a, idx) => (idx === i ? { ...a, [field]: val } : a)) });
+
+  return (
+    <div className="variant-editor-row">
+      <div className="variant-editor-grid">
+        <input placeholder="SKU (masalan, TSH-M-QORA)" value={f.sku} onChange={(e) => setF({ ...f, sku: e.target.value })} />
+        <input type="number" min="0" placeholder="Miqdor" value={f.stock} onChange={(e) => setF({ ...f, stock: e.target.value })} />
+        <input type="number" min="0" step="0.01" placeholder="Narx (bo'sh = mahsulot narxi)" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input type="checkbox" checked={f.is_active} onChange={(e) => setF({ ...f, is_active: e.target.checked })} /> Faol
+        </label>
+      </div>
+      {f.attrs.map((a, i) => (
+        <div key={i} className="variant-editor-grid">
+          <input placeholder="Xususiyat (rang)" value={a.key} onChange={(e) => setAttr(i, 'key', e.target.value)} />
+          <input placeholder="Qiymat (Qora)" value={a.value} onChange={(e) => setAttr(i, 'value', e.target.value)} />
+        </div>
+      ))}
+      <div className="variant-editor-actions">
+        <button type="button" className="btn btn-outline btn-sm" onClick={() => setF({ ...f, attrs: [...f.attrs, { key: '', value: '' }] })}>
+          + Xususiyat
+        </button>
+        <button type="button" className="btn btn-outline btn-sm" onClick={onCancel}>Bekor</button>
+        <button type="button" className="btn btn-primary btn-sm" disabled={saving || !f.sku.trim()} onClick={() => onSave(toPayload(f))}>
+          {saving ? '...' : 'Saqlash'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function VariantsEditor({ productId, variants, setVariants, onError }) {
+  const [editing, setEditing] = useState(null); // variant id | 'new' | null
+  const [saving, setSaving] = useState(false);
+
+  const save = async (payload) => {
+    setSaving(true);
+    onError('');
+    try {
+      if (editing === 'new') {
+        const { data } = await variantApi.create(productId, payload);
+        setVariants((prev) => [...prev, data]);
+      } else {
+        const { data } = await variantApi.update(editing, payload);
+        setVariants((prev) => prev.map((v) => (v.id === data.id ? data : v)));
+      }
+      setEditing(null);
+    } catch (err) {
+      onError(extractErrorMessage(err, 'Variantni saqlashda xatolik yuz berdi.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id) => {
+    try {
+      await variantApi.remove(id);
+      setVariants((prev) => prev.filter((v) => v.id !== id));
+    } catch (err) {
+      onError(extractErrorMessage(err, "Variantni o'chirib bo'lmadi."));
+    }
+  };
+
+  return (
+    <div style={{ marginTop: 'var(--sp-6)' }}>
+      <div className="checkout-section-label">Variantlar (rang, o'lcham...)</div>
+      <p className="field-hint">Variant qo'shsangiz, xaridor savatga qo'shishda birini tanlashi shart bo'ladi.</p>
+
+      {variants.map((v) =>
+        editing === v.id ? (
+          <VariantForm key={v.id} initial={toForm(v)} saving={saving} onSave={save} onCancel={() => setEditing(null)} />
+        ) : (
+          <div key={v.id} className="variant-editor-row" style={{ opacity: v.is_active ? 1 : 0.55 }}>
+            <strong>{variantLabel(v)}</strong>
+            <span className="field-hint">
+              {v.sku} · {Number(v.effective_price).toLocaleString('uz-UZ')} so'm · {v.stock != null ? `${v.stock} dona` : 'cheksiz'}
+              {!v.is_active && ' · nofaol'}
+            </span>
+            <div className="variant-editor-actions">
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditing(v.id)}>Tahrirlash</button>
+              <button type="button" className="btn btn-danger-outline btn-sm" onClick={() => remove(v.id)}>
+                <TrashIcon width={13} height={13} />
+              </button>
+            </div>
+          </div>
+        )
+      )}
+
+      {editing === 'new' ? (
+        <VariantForm initial={EMPTY_VARIANT} saving={saving} onSave={save} onCancel={() => setEditing(null)} />
+      ) : (
+        <button type="button" className="btn btn-outline btn-block" onClick={() => setEditing('new')}>
+          <PlusIcon width={16} height={16} /> Variant qo'shish
+        </button>
+      )}
     </div>
   );
 }

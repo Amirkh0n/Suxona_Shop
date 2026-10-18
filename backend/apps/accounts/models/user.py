@@ -39,6 +39,8 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
     REQUIRED_FIELDS: list[str] = []
 
     class Meta:
+        verbose_name = "Foydalanuvchi"
+        verbose_name_plural = "Foydalanuvchilar"
         indexes = [
             models.Index(fields=["phone"], name="accounts_user_phone_idx"),
             models.Index(fields=["is_active"], name="accounts_user_active_idx"),

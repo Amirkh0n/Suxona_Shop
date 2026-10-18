@@ -2,6 +2,10 @@ from django.db import transaction
 
 from apps.accounts.models import User
 from apps.common.enums import StoreApplicationStatus
+from apps.notifications.telegram.services import (
+    after_commit,
+    notify_admins_new_store_application,
+)
 from apps.stores.exceptions import (
     PendingStoreApplicationExistsError,
     UserAlreadyHasStoreError,
@@ -37,16 +41,11 @@ class CreateStoreApplicationService:
 
         # Let admins know right away (no-op unless TELEGRAM_ADMIN_CHAT_ID is
         # set); deferred to commit so a rolled-back application isn't announced.
-        def _notify_admins() -> None:
-            from apps.notifications.telegram.services import (
-                notify_admins_new_store_application,
-            )
-
-            notify_admins_new_store_application(
-                store_name=application.store_name,
-                owner_phone=owner.phone,
-            )
-
-        transaction.on_commit(_notify_admins)
+        after_commit(
+            notify_admins_new_store_application,
+            store_name=application.store_name,
+            owner_phone=owner.phone,
+            application_id=application.pk,
+        )
 
         return application

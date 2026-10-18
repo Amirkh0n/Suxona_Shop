@@ -3,6 +3,10 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.common.enums import StoreApplicationStatus
+from apps.notifications.telegram.services import (
+    after_commit,
+    notify_store_application_rejected,
+)
 from apps.stores.exceptions import (
     InvalidStoreApplicationStatusError,
     StoreApplicationNotFound,
@@ -44,17 +48,11 @@ class RejectStoreService:
         )
 
         # Sent only after commit so a rolled-back rejection never notifies.
-        def _notify() -> None:
-            from apps.notifications.telegram.services import (
-                notify_store_application_rejected,
-            )
-
-            notify_store_application_rejected(
-                owner=application.owner,
-                store_name=application.store_name,
-                admin_note=application.admin_note,
-            )
-
-        transaction.on_commit(_notify)
+        after_commit(
+            notify_store_application_rejected,
+            owner=application.owner,
+            store_name=application.store_name,
+            admin_note=application.admin_note,
+        )
 
         return application

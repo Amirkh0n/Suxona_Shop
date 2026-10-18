@@ -3,6 +3,10 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.common.enums import StoreApplicationStatus, StoreStatus
+from apps.notifications.telegram.services import (
+    after_commit,
+    notify_store_application_approved,
+)
 from apps.stores.exceptions import (
     InvalidStoreApplicationStatusError,
     StoreApplicationNotFound,
@@ -50,16 +54,10 @@ class ApproveStoreService:
         # Sent only once the transaction actually commits: if anything above
         # rolls back, the applicant must not get a "congratulations" message
         # for a store that was never created.
-        def _notify() -> None:
-            from apps.notifications.telegram.services import (
-                notify_store_application_approved,
-            )
-
-            notify_store_application_approved(
-                owner=application.owner,
-                store_name=store.name,
-            )
-
-        transaction.on_commit(_notify)
+        after_commit(
+            notify_store_application_approved,
+            owner=application.owner,
+            store_name=store.name,
+        )
 
         return store

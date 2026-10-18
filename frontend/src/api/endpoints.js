@@ -4,6 +4,7 @@ import api from './client';
 export const authApi = {
   login: (phone, password) => api.post('/auth/login', { phone, password }),
   register: (payload) => api.post('/auth/register', payload),
+  refresh: (refresh) => api.post('/auth/refresh', { refresh }),
   me: () => api.get('/auth/me'),
   telegramVerify: (payload) => api.post('/auth/telegram/verify', payload),
 };
@@ -57,6 +58,7 @@ export const productApi = {
   retrieve: (id) => api.get(`/products/${id}`),
   create: (payload) => api.post('/products', payload),
   update: (id, payload) => api.patch(`/products/${id}`, payload),
+  remove: (id) => api.delete(`/products/${id}`),
   myProducts: (params) => api.get('/products/my', { params }),
   uploadImage: (productId, formData) =>
     api.post(`/products/${productId}/images`, formData, {
@@ -67,11 +69,23 @@ export const productApi = {
   deleteImage: (imageId) => api.delete(`/product-images/${imageId}`),
 };
 
+/* ---------- Product variants (seller) ---------- */
+export const variantApi = {
+  create: (productId, payload) => api.post(`/products/${productId}/variants`, payload),
+  update: (variantId, payload) => api.patch(`/product-variants/${variantId}`, payload),
+  remove: (variantId) => api.delete(`/product-variants/${variantId}`),
+};
+
 /* ---------- Cart ---------- */
 export const cartApi = {
   get: () => api.get('/cart'),
   clear: () => api.delete('/cart'),
-  addItem: (productId, quantity) => api.post('/cart/items', { product_id: productId, quantity }),
+  addItem: (productId, quantity, variantId = null) =>
+    api.post('/cart/items', {
+      product_id: productId,
+      quantity,
+      ...(variantId ? { variant_id: variantId } : {}),
+    }),
   updateItem: (itemId, quantity) => api.patch(`/cart/items/${itemId}`, { quantity }),
   removeItem: (itemId) => api.delete(`/cart/items/${itemId}`),
 };

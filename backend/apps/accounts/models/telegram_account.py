@@ -15,6 +15,8 @@ class TelegramAccount(BaseModel):
     linked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "Telegram akkaunt"
+        verbose_name_plural = "Telegram akkauntlar"
         indexes = [
             models.Index(fields=["telegram_id"], name="telegram_account_id_idx"),
             models.Index(fields=["user"], name="telegram_account_user_idx"),

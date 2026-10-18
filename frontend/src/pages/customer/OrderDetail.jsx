@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { variantLabel } from '../../utils/variants';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { useNavigate, useParams } from 'react-router-dom';
 import { orderApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +19,9 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState('');
 
   const load = () => orderApi.retrieve(orderId).then(({ data }) => setOrder(data));
 
@@ -28,7 +33,7 @@ export default function OrderDetail() {
 
   const isSellerOfThisOrder = myStore != null && order?.store?.id === myStore.id;
 
-  const runAction = async (action) => {
+  const runAction = async (action, payload) => {
     setError('');
     setBusy(true);
     try {
@@ -36,7 +41,7 @@ export default function OrderDetail() {
       if (action === 'delivering') await orderApi.delivering(orderId);
       if (action === 'complete') await orderApi.complete(orderId);
       if (action === 'cancel') await orderApi.cancel(orderId);
-      if (action === 'reject') await orderApi.reject(orderId, 'Sotuvchi tomonidan rad etildi');
+      if (action === 'reject') await orderApi.reject(orderId, payload || 'Sotuvchi tomonidan rad etildi');
       await load();
     } catch (err) {
       setError(extractErrorMessage(err, 'Amalni bajarishda xatolik yuz berdi.'));
@@ -76,6 +81,7 @@ export default function OrderDetail() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="cart-item-name">{item.product?.name}</div>
+                {item.variant && <div className="cart-item-variant">{variantLabel(item.variant)}</div>}
                 <div className="cart-item-price">{item.quantity} × {formatSum(item.price)}</div>
               </div>
               <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>{formatSum(item.subtotal)}</div>
@@ -107,7 +113,7 @@ export default function OrderDetail() {
         </div>
 
         {!isSellerOfThisOrder && order.status === 'PENDING' && (
-          <button className="btn btn-danger-outline btn-block" disabled={busy} onClick={() => runAction('cancel')}>
+          <button className="btn btn-danger-outline btn-block" disabled={busy} onClick={() => setConfirmCancel(true)}>
             Buyurtmani bekor qilish
           </button>
         )}
@@ -117,7 +123,22 @@ export default function OrderDetail() {
             {order.status === 'PENDING' && (
               <>
                 <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy} onClick={() => runAction('accept')}>Qabul qilish</button>
-                <button className="btn btn-danger-outline" style={{ flex: 1 }} disabled={busy} onClick={() => runAction('reject')}>Rad etish</button>
+                <button className="btn btn-danger-outline" style={{ flex: 1 }} disabled={busy} onClick={() => setRejecting((v) => !v)}>Rad etish</button>
+                {rejecting && (
+                  <div className="field" style={{ flexBasis: '100%', margin: 0 }}>
+                    <label htmlFor="reject-reason">Rad etish sababi (mijozga yuboriladi)</label>
+                    <textarea id="reject-reason" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Masalan: mahsulot tugagan" />
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-block"
+                      style={{ marginTop: 'var(--sp-2)' }}
+                      disabled={busy || !reason.trim()}
+                      onClick={() => runAction('reject', reason.trim())}
+                    >
+                      Rad etishni tasdiqlash
+                    </button>
+                  </div>
+                )}
               </>
             )}
             {order.status === 'ACCEPTED' && (
@@ -129,6 +150,14 @@ export default function OrderDetail() {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Buyurtmani bekor qilasizmi?"
+        message="Bekor qilingan buyurtmani qayta tiklab bo'lmaydi."
+        confirmLabel="Ha, bekor qilish"
+        onConfirm={() => { setConfirmCancel(false); runAction('cancel'); }}
+        onCancel={() => setConfirmCancel(false)}
+      />
     </div>
   );
 }

@@ -2,6 +2,10 @@ from django.db import transaction
 
 from apps.accounts.models import User
 from apps.common.enums import OrderStatus
+from apps.notifications.telegram.services import (
+    after_commit,
+    notify_seller_order_cancelled,
+)
 from apps.orders.exceptions import (
     InvalidOrderStatusError,
     NotOrderOwnerError,
@@ -37,5 +41,6 @@ class CancelOrderService:
         locked.status = OrderStatus.CANCELLED
         locked.save(update_fields=["status", "updated_at"])
         restock_order_items(locked)
+        after_commit(notify_seller_order_cancelled, order_id=locked.pk)
 
         return locked

@@ -1,8 +1,8 @@
-"""Telegram bot update handling.
+"""Telegram update handling (synchronous).
 
-``handle_update`` is a pure function of one Telegram ``update`` dict, so the
-same code serves long-polling (``manage.py run_telegram_bot``) today and a
-webhook endpoint later without changes.
+``handle_update`` is a pure function of one Telegram ``update`` dict. It is
+called from the webhook view, in-request: Telegram POSTs an update, we handle
+it with blocking calls and answer 200. No polling loop, no event loop.
 
 Supported:
 * ``/start verify_<token>`` – completes registration verification by calling
@@ -23,6 +23,7 @@ from apps.accounts.services.verify_telegram_registration import (
     VerifyTelegramRegistrationService,
 )
 from apps.notifications.telegram import client, templates
+from apps.notifications.telegram.services import verification_links
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +41,16 @@ def handle_update(update: dict) -> None:
     if not text.startswith("/start"):
         return
 
-    payload = text[len("/start"):].strip()
+    payload = text[len("/start") :].strip()
     if payload.startswith(VERIFY_PREFIX):
         _handle_verification(
             chat_id=chat_id,
-            token=payload[len(VERIFY_PREFIX):],
+            token=payload[len(VERIFY_PREFIX) :],
             telegram_id=str(sender.get("id", chat_id)),
             username=sender.get("username") or "",
         )
     else:
-        client.send_message(chat_id, templates.welcome_no_token())
+        client.send_message(chat_id, templates.welcome_no_token(), links=verification_links())
 
 
 def _handle_verification(*, chat_id: int, token: str, telegram_id: str, username: str) -> None:
@@ -63,7 +64,9 @@ def _handle_verification(*, chat_id: int, token: str, telegram_id: str, username
         client.send_message(chat_id, templates.verification_invalid_or_expired())
     except TelegramAlreadyLinkedError:
         client.send_message(chat_id, templates.verification_telegram_already_linked())
-    except Exception:  # noqa: BLE001 - never let one bad update kill the poll loop
+    except Exception:  # noqa: BLE001 - one bad update must not fail the webhook
         logger.exception("Unexpected error verifying Telegram registration")
     else:
-        client.send_message(chat_id, templates.verification_success())
+        client.send_message(
+            chat_id, templates.verification_success(), links=verification_links()
+        )

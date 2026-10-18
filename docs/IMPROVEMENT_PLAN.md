@@ -19,15 +19,16 @@ CI yo'q · Dockerfile root, collectstatic yo'q · admin dizayni standart.
 |---|-----|
 | 1 | **Do'kon arizasi → Store**: admin'da bitta ariza sahifasida "Approve / Reject" tugmalari + ommaviy amallar; `ApproveStoreService` Store yaratadi |
 | 2 | **Audit**: `StoreApplication.reviewed_by / reviewed_at` (migratsiya 0002), REST va admin ikkalasida |
-| 3 | **Telegram bot** (`manage.py run_telegram_bot`, long polling): `/start verify_<token>` ro'yxatdan o'tishni tasdiqlaydi; ariza tasdiqlansa/rad etilsa egasiga xabar; yangi ariza haqida admin chatga xabar (`TELEGRAM_ADMIN_CHAT_ID`) |
+| 3 | **Telegram bot — webhook, sinxron** (`POST /api/v1/telegram/webhook`, secret header bilan): `/start verify_<token>` ro'yxatdan o'tishni tasdiqlaydi; `set_telegram_webhook` buyrug'i. Polling yo'q, asyncio/Celery yo'q |
+| 3a | **Xabarnomalar havola bilan**: yangi ariza → admin; ariza natijasi → ega; yangi buyurtma → sotuvchi; buyurtma holati → mijoz; bekor qilish → sotuvchi |
 | 4 | Xabarlar `transaction.on_commit` orqali (rollback bo'lsa yuborilmaydi), Telegram xatosi asosiy jarayonni buzmaydi |
-| 5 | **Bug fix**: bekor/rad etilgan buyurtma zaxirani qaytaradi (`restock_order_items`) |
+| 5 | **Bug fix**: bekor/rad etilgan buyurtma zaxirani qaytaradi (`restock_order_items`); **checkout Postgres'da variantsiz mahsulotda yiqilardi** (`FOR UPDATE` + outer join) — tuzatildi |
 | 6 | **Xavfsizlik**: CORS allow-list (`DJANGO_CORS_ALLOWED_ORIGINS`, prod'da yopiq), rate-limit (login/register 10/min) |
 | 7 | **Cloudflare R2** `STORAGES` ulandi (`CLOUDFLARE_R2_*`, frontend `VITE_IMAGE_BASE_URL` bilan juft) |
-| 8 | Logging, WhiteNoise (admin static), **django-admin-interface** temasi, admin sarlavhalari |
-| 9 | Docker: non-root, collectstatic, healthcheck, `bot` servisi, `.env` (endi `.env.example` emas) |
+| 8 | Logging, WhiteNoise (admin static), **Jazzmin** admin (maxsus dashboard: KPI, kutilayotgan arizalar, 7 kunlik grafik; o'zbekcha UI), admin sarlavhalari |
+| 9 | Docker: non-root, collectstatic, healthcheck, `.env` (endi `.env.example` emas) |
 | 10 | **CI** (GitHub Actions): ruff, migrations check, pytest, frontend lint+build |
-| 11 | **Testlar**: 13 ta (ariza ko'rib chiqish, admin tugmalari, bot verify, restock, throttle) |
+| 11 | **Testlar**: 31 ta (ariza, admin tugmalari, bot/webhook, xabarnomalar, restock, checkout, throttle) |
 
 ## 3. Keyingi bosqichlar (tavsiya etilgan tartib)
 
@@ -46,9 +47,8 @@ CI yo'q · Dockerfile root, collectstatic yo'q · admin dizayni standart.
 3. Buyurtmalar uchun to'liq holat boshqaruvi + eksport (CSV).
 
 **C. Telegram bot kengaytmasi**
-1. Buyurtma holati o'zgarganda mijozga, yangi buyurtma kelganda sotuvchiga xabar.
-2. Webhook rejimi (prod): `handle_update` allaqachon sof funksiya.
-3. Bot ichida buyurtmani qabul/rad etish tugmalari (inline keyboard).
+1. Telegram yuborish hozir so'rov ichida sinxron (timeout 5s). Trafik oshsa — Celery/outbox.
+2. Bot ichida buyurtmani qabul/rad etish tugmalari (inline keyboard).
 
 **D. Operatsion**
 Sentry, health endpoint, zaxira (backup) rejasi, staging muhit, Redis+Celery (xabarlar/muddati o'tgan buyurtmalar uchun), to'lov (Payme/Click) — MVP'dan keyin.

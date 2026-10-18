@@ -24,6 +24,8 @@ class Store(BaseModel):
     )
 
     class Meta:
+        verbose_name = "Do'kon"
+        verbose_name_plural = "Do'konlar"
         indexes = [
             models.Index(fields=["owner"], name="store_owner_idx"),
             models.Index(fields=["name"], name="store_name_idx"),

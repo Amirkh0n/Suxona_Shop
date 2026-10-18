@@ -12,6 +12,8 @@ class Cart(BaseModel):
     )
 
     class Meta:
+        verbose_name = "Savat"
+        verbose_name_plural = "Savatlar"
         indexes = [
             models.Index(fields=["user"], name="cart_user_idx"),
         ]

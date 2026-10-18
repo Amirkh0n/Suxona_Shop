@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setUnauthorizedHandler(() => { setUser(null); setMyStore(null); });
-    if (tokenStore.getAccess()) {
+    if (tokenStore.getAccess() || tokenStore.getRefresh()) {
       loadMe().finally(() => setInitializing(false));
     } else {
       setInitializing(false);

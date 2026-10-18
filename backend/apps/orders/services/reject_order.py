@@ -1,6 +1,10 @@
 from django.db import transaction
 
 from apps.common.enums import OrderStatus
+from apps.notifications.telegram.services import (
+    after_commit,
+    notify_customer_order_status,
+)
 from apps.orders.exceptions import InvalidOrderStatusError, OrderNotFound
 from apps.orders.models import Order
 from apps.orders.services.restock import restock_order_items
@@ -23,5 +27,6 @@ class RejectOrderService:
             order.note = reason
         order.save(update_fields=["status", "note", "updated_at"])
         restock_order_items(order)
+        after_commit(notify_customer_order_status, order_id=order.pk)
 
         return order

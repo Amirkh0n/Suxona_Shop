@@ -11,5 +11,5 @@ gunicorn>=22.0
 pillow
 python-dotenv
 requests>=2.32
-django-admin-interface>=0.30
+django-jazzmin>=3.0
 whitenoise>=6.7

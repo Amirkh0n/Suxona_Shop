@@ -31,6 +31,8 @@ class StoreApplication(BaseModel):
     reviewed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        verbose_name = "Do'kon arizasi"
+        verbose_name_plural = "Do'kon arizalari"
         indexes = [
             models.Index(fields=["owner"], name="store_app_owner_idx"),
             models.Index(fields=["status"], name="store_app_status_idx"),

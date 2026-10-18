@@ -65,3 +65,14 @@ def test_admin_bulk_reject_action(client, application, staff, sent):
     assert resp.status_code == 302
     application.refresh_from_db()
     assert application.status == StoreApplicationStatus.REJECTED
+
+
+def test_change_page_shows_review_buttons_only_when_pending(client, application, staff):
+    client.force_login(staff)
+    url = reverse("admin:stores_storeapplication_change", args=[application.pk])
+    html = client.get(url).content.decode()
+    assert 'name="_approve"' in html and 'name="_reject"' in html
+
+    ApproveStoreService.execute(application=application, reviewed_by=staff)
+    html = client.get(url).content.decode()
+    assert 'name="_approve"' not in html

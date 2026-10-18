@@ -15,6 +15,8 @@ class ProductImage(BaseModel):
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
+        verbose_name = "Mahsulot rasmi"
+        verbose_name_plural = "Mahsulot rasmlari"
         indexes = [
             models.Index(fields=["product"], name="product_image_product_idx"),
             models.Index(fields=["product", "sort_order"], name="product_image_sort_idx"),

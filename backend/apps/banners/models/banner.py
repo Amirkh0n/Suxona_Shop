@@ -11,6 +11,8 @@ class Banner(BaseModel):
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
+        verbose_name = "Banner"
+        verbose_name_plural = "Bannerlar"
         indexes = [
             models.Index(fields=["is_active"], name="banner_active_idx"),
             models.Index(fields=["sort_order"], name="banner_sort_order_idx"),

@@ -27,6 +27,8 @@ class Product(BaseModel):
     )
 
     class Meta:
+        verbose_name = "Mahsulot"
+        verbose_name_plural = "Mahsulotlar"
         indexes = [
             models.Index(fields=["store"], name="product_store_idx"),
             models.Index(fields=["category"], name="product_category_idx"),

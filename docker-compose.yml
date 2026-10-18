@@ -15,22 +15,6 @@ services:
       db:
         condition: service_healthy
 
-  # Telegram bot (long polling): handles /start verify_<token> and sends
-  # store-application notifications' companion commands.
-  bot:
-    build:
-      context: .
-      dockerfile: docker/backend/Dockerfile
-    command: uv run python manage.py run_telegram_bot
-    env_file:
-      - .env
-    environment:
-      POSTGRES_HOST: db
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
   db:
     image: postgres:16-alpine
     environment:
