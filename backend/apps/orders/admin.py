@@ -42,7 +42,10 @@ class OrderAdmin(admin.ModelAdmin):
     autocomplete_fields = ("customer", "store")
     raw_id_fields = ("address",)
 
+    # `status` is read-only on purpose: editing it in the form would bypass the
+    # state machine (no restock, no notification). Use the actions instead.
     readonly_fields = (
+        "status",
         "customer",
         "store",
         "address",
@@ -65,7 +68,12 @@ class OrderAdmin(admin.ModelAdmin):
     )
 
     inlines = (OrderItemInline,)
-    actions = ("mark_accepted", "mark_delivering", "mark_completed")
+    actions = (
+        "mark_accepted",
+        "mark_delivering",
+        "mark_completed",
+        "mark_cancelled",
+    )
 
     @admin.display(description="Status")
     def status_badge(self, obj: Order) -> str:
@@ -75,13 +83,13 @@ class OrderAdmin(admin.ModelAdmin):
             obj.get_status_display(),
         )
 
-    def _run_transition(self, request, queryset, service, label: str):
+    def _run_transition(self, request, queryset, service, label: str, **kwargs):
         from apps.common.exceptions import ServiceError
 
         succeeded = 0
         for order in queryset:
             try:
-                service.execute(order=order)
+                service.execute(order=order, **kwargs)
                 succeeded += 1
             except ServiceError as exc:
                 self.message_user(
@@ -109,6 +117,15 @@ class OrderAdmin(admin.ModelAdmin):
         from apps.orders.services import CompleteOrderService
 
         self._run_transition(request, queryset, CompleteOrderService, "completed")
+
+
+    @admin.action(description="Cancel selected orders (restocks items)")
+    def mark_cancelled(self, request, queryset):
+        from apps.orders.services import CancelOrderService
+
+        self._run_transition(
+            request, queryset, CancelOrderService, "cancelled", actor=request.user
+        )
 
 
 class CartItemInline(admin.TabularInline):

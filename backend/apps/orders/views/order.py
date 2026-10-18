@@ -1,4 +1,4 @@
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -8,7 +8,6 @@ from apps.accounts.selectors import AddressSelector
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import (
     IsAuthenticatedUser,
-    IsOrderOwner,
     IsOrderOwnerOrStoreOwner,
 )
 from apps.common.schema import DetailSerializer
@@ -17,7 +16,9 @@ from apps.orders.exceptions import (
     CartNotFoundError,
     DeliveryZoneNotFoundError,
     EmptyStoreCartError,
+    IdempotencyKeyReuseError,
     InsufficientStockError,
+    InvalidIdempotencyKeyError,
     InvalidOrderStatusError,
     NotOrderOwnerError,
     OrderNotFound,
@@ -30,7 +31,7 @@ from apps.orders.serializers import (
     OrderDetailSerializer,
     OrderListSerializer,
 )
-from apps.orders.services import CancelOrderService, CreateOrderService
+from apps.orders.services import CancelOrderService, IdempotentCreateOrderService
 from apps.orders.views.base import PaginatedAPIView
 from apps.stores.selectors import StoreSelector
 
@@ -41,9 +42,24 @@ class OrderCreateView(APIView):
 
     @extend_schema(
         summary="Create an order from the store cart",
+        description=(
+            "Send an `Idempotency-Key` header (8-128 chars) to make the call "
+            "safe to retry: a repeat with the same key and payload returns the "
+            "original order with 200 and `Idempotent-Replayed: true` instead of "
+            "creating a second one."
+        ),
+        parameters=[
+            OpenApiParameter(
+                "Idempotency-Key", str, OpenApiParameter.HEADER, required=False
+            ),
+        ],
         request=OrderCreateSerializer,
         responses={
+            200: OrderDetailSerializer,
             201: OrderDetailSerializer,
+            422: OpenApiResponse(
+                DetailSerializer, "Idempotency-Key reused with a different request."
+            ),
             400: OpenApiResponse(DetailSerializer, "Validation or service error."),
             403: OpenApiResponse(DetailSerializer, "Address not owned."),
             404: OpenApiResponse(DetailSerializer, "Store/address/zone not found."),
@@ -72,12 +88,19 @@ class OrderCreateView(APIView):
             )
 
         try:
-            order = CreateOrderService.execute(
+            order, created = IdempotentCreateOrderService.execute(
+                key=request.headers.get("Idempotency-Key"),
                 customer=request.user,
                 store=store,
                 address=address,
                 note=data.get("note", ""),
             )
+        except IdempotencyKeyReuseError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+        except InvalidIdempotencyKeyError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except AddressOwnershipError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         except (CartNotFoundError, DeliveryZoneNotFoundError) as exc:
@@ -92,11 +115,14 @@ class OrderCreateView(APIView):
         except ServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        created = OrderSelector.get_order_by_id(order.pk)
-        return Response(
-            OrderDetailSerializer(created).data,
-            status=status.HTTP_201_CREATED,
+        fresh = OrderSelector.get_order_by_id(order.pk)
+        response = Response(
+            OrderDetailSerializer(fresh).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+        if not created:
+            response["Idempotent-Replayed"] = "true"
+        return response
 
 
 @extend_schema(tags=["Orders"])
@@ -145,10 +171,14 @@ class OrderDetailView(APIView):
 
 @extend_schema(tags=["Orders"])
 class CancelOrderView(APIView):
-    permission_classes = [IsAuthenticatedUser, IsOrderOwner]
+    permission_classes = [IsAuthenticatedUser, IsOrderOwnerOrStoreOwner]
 
     @extend_schema(
         summary="Cancel an order",
+        description=(
+            "Customer: while PENDING. Store owner: while ACCEPTED. "
+            "Staff: any non-terminal status. See orders.state_machine."
+        ),
         request=None,
         responses={
             200: OrderDetailSerializer,
@@ -159,13 +189,15 @@ class CancelOrderView(APIView):
     )
     def post(self, request: Request, order_id: int) -> Response:
         order = OrderSelector.get_order_by_id(order_id)
-        if order is None:
+        # Same rule as the detail view: strangers get 404, not 403, so order
+        # ids cannot be enumerated.
+        if order is None or not IsOrderOwnerOrStoreOwner().has_object_permission(
+            request, self, order
+        ):
             return Response(
                 {"detail": "Order not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
-        self.check_object_permissions(request, order)
 
         try:
             CancelOrderService.execute(order=order, actor=request.user)

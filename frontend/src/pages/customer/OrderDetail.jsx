@@ -142,7 +142,10 @@ export default function OrderDetail() {
               </>
             )}
             {order.status === 'ACCEPTED' && (
-              <button className="btn btn-primary btn-block" disabled={busy} onClick={() => runAction('delivering')}>Yetkazishga chiqarish</button>
+              <>
+                <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy} onClick={() => runAction('delivering')}>Yetkazishga chiqarish</button>
+                <button className="btn btn-danger-outline" style={{ flex: 1 }} disabled={busy} onClick={() => setConfirmCancel(true)}>Bekor qilish</button>
+              </>
             )}
             {order.status === 'DELIVERING' && (
               <button className="btn btn-primary btn-block" disabled={busy} onClick={() => runAction('complete')}>Yakunlash</button>

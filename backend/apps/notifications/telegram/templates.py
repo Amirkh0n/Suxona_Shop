@@ -103,3 +103,28 @@ def order_status_for_customer(order_id: int, store_name: str, status: str, note:
 
 def order_cancelled_for_seller(order_id: int, customer_name: str) -> str:
     return f"🚫 <b>Buyurtma #{order_id}</b> mijoz ({esc(customer_name)}) tomonidan bekor qilindi."
+
+
+# -- product moderation --------------------------------------------------------
+def new_product_for_review(product_name: str, store_name: str) -> str:
+    return (
+        "🆕 <b>Mahsulot moderatsiyaga yuborildi</b>\n\n"
+        f"Mahsulot: «{esc(product_name)}»\n"
+        f"Do'kon: «{esc(store_name)}»\n\n"
+        "Ko'rib chiqish uchun admin panelni oching."
+    )
+
+
+def product_approved(product_name: str) -> str:
+    return (
+        "✅ <b>Mahsulot tasdiqlandi</b>\n\n"
+        f"«{esc(product_name)}» endi SuxonaShop'da xaridorlarga ko'rinadi."
+    )
+
+
+def product_rejected(product_name: str, note: str) -> str:
+    text = f"❌ «{esc(product_name)}» mahsuloti moderatsiyadan o'tmadi."
+    if note:
+        text += f"\n\n<b>Sabab:</b> {esc(note)}"
+    text += "\n\nMa'lumotlarni to'g'rilab, qayta yuborishingiz mumkin."
+    return text

@@ -1,5 +1,5 @@
 import { linePrice, variantLabel, availableStock } from '../../utils/variants';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addressApi, orderApi, productApi, storeApi, villageApi } from '../../api/endpoints';
 import { useCart } from '../../context/CartContext';
@@ -99,13 +99,31 @@ export default function Checkout() {
     setStep(2);
   };
 
+  // One key per distinct order payload: retries of the same payload reuse it
+  // (so the server replays instead of duplicating); a changed address/note gets
+  // a fresh key, since the server rejects a key reused with a different body.
+  const keyRef = useRef({ sig: '', key: '' });
+  const idempotencyKeyFor = (sig) => {
+    if (keyRef.current.sig !== sig) {
+      keyRef.current = { sig, key: crypto.randomUUID() };
+    }
+    return keyRef.current.key;
+  };
+
   const submitOrder = async () => {
+    if (submitting) return; // ignore double clicks outright
     setError('');
     const ok = await revalidateStock();
     if (!ok) return;
     setSubmitting(true);
     try {
-      const { data } = await orderApi.create(Number(storeId), Number(addressId), note || undefined);
+      const sig = `${storeId}|${addressId}|${note || ''}`;
+      const { data } = await orderApi.create(
+        Number(storeId),
+        Number(addressId),
+        note || undefined,
+        idempotencyKeyFor(sig)
+      );
       await refreshCart();
       navigate(`/buyurtma-qabul-qilindi/${data.id}`, { replace: true });
     } catch (err) {

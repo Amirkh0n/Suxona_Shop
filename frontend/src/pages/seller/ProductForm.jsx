@@ -8,12 +8,19 @@ import { resolveImageUrl } from '../../utils/media';
 import { PageSpinner } from '../../components/Spinner';
 import { PlusIcon, TrashIcon } from '../../components/Icons';
 
-const STATUS_OPTIONS = [
-  { value: 'DRAFT', label: 'Qoralama' },
-  { value: 'ACTIVE', label: 'Faol' },
-  { value: 'HIDDEN', label: 'Yashirilgan' },
-  { value: 'OUT_OF_STOCK', label: 'Tugagan' },
-];
+// What a seller may pick. ACTIVE is only offered once an admin has approved the
+// product; a new product goes through "Moderatsiyaga yuborish" instead.
+const LABELS = {
+  DRAFT: 'Qoralama',
+  ACTIVE: 'Faol',
+  HIDDEN: 'Yashirilgan',
+  OUT_OF_STOCK: 'Tugagan',
+};
+const statusOptions = (approved) =>
+  (approved ? ['ACTIVE', 'HIDDEN', 'OUT_OF_STOCK', 'DRAFT'] : ['DRAFT', 'HIDDEN']).map((value) => ({
+    value,
+    label: LABELS[value],
+  }));
 
 export default function SellerProductForm() {
   const { productId } = useParams();
@@ -25,6 +32,8 @@ export default function SellerProductForm() {
   const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', stock: '', status: 'ACTIVE' });
   const [images, setImages] = useState([]);
   const [variants, setVariants] = useState([]);
+  const [moderation, setModeration] = useState({ approved: false, note: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -50,6 +59,7 @@ export default function SellerProductForm() {
       });
       setImages(data.images || []);
       setVariants(data.variants || []);
+      setModeration({ approved: Boolean(data.is_approved), note: data.moderation_note || '' });
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [productId, isEdit]);
@@ -153,6 +163,23 @@ export default function SellerProductForm() {
   };
   const onTileDragEnd = () => { setDragId(null); setDragOverId(null); };
 
+  const submitForReview = async () => {
+    setError('');
+    setSubmittingReview(true);
+    try {
+      const { data } = await productApi.update(productId, { status: 'PENDING_REVIEW' });
+      setForm((f) => ({ ...f, status: data.status }));
+      setModeration((m) => ({ ...m, note: '' }));
+    } catch (err) {
+      setError(extractErrorMessage(err, "Moderatsiyaga yuborib bo'lmadi."));
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const inReview = form.status === 'PENDING_REVIEW';
+  const rejected = form.status === 'REJECTED';
+
   const onDeleteProduct = async () => {
     setConfirmDelete(false);
     try {
@@ -233,18 +260,43 @@ export default function SellerProductForm() {
             <input id="stock" name="stock" type="number" min="0" value={form.stock} onChange={onChange} placeholder="Cheksiz" />
           </div>
         </div>
-        {isEdit && (
+        {isEdit && inReview && (
+          <div className="alert" style={{ marginBottom: 'var(--sp-4)' }}>
+            ⏳ Mahsulot moderatsiyada. Admin tasdiqlagach xaridorlarga ko'rinadi va sizga Telegram orqali xabar keladi.
+          </div>
+        )}
+        {isEdit && rejected && (
+          <div className="alert alert-error" style={{ marginBottom: 'var(--sp-4)' }}>
+            ❌ Mahsulot rad etildi.{moderation.note && <> <b>Sabab:</b> {moderation.note}</>} Ma'lumotlarni to'g'rilab, qayta yuboring.
+          </div>
+        )}
+        {isEdit && !inReview && !rejected && (
           <div className="field">
             <label htmlFor="status">Holat</label>
             <select id="status" name="status" value={form.status} onChange={onChange}>
-              {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {statusOptions(moderation.approved).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+            {!moderation.approved && (
+              <div className="field-hint">Mahsulot sotuvga chiqishi uchun avval moderatsiyadan o'tishi kerak.</div>
+            )}
           </div>
         )}
         <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
           {saving ? 'Saqlanmoqda...' : isEdit ? "O'zgarishlarni saqlash" : 'Mahsulotni yaratish'}
         </button>
       </form>
+
+      {isEdit && !moderation.approved && !inReview && (
+        <button
+          type="button"
+          className="btn btn-outline btn-block"
+          style={{ marginTop: 'var(--sp-4)' }}
+          disabled={submittingReview}
+          onClick={submitForReview}
+        >
+          {submittingReview ? 'Yuborilmoqda...' : rejected ? 'Qayta moderatsiyaga yuborish' : 'Moderatsiyaga yuborish'}
+        </button>
+      )}
 
       {isEdit && (
         <VariantsEditor

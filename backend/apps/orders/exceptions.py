@@ -67,3 +67,11 @@ class ProductVariantMismatchError(OrderServiceError):
 
 class InvalidQuantityError(OrderServiceError):
     default_message = "Quantity must be greater than zero."
+
+
+class IdempotencyKeyReuseError(OrderServiceError):
+    default_message = "This Idempotency-Key was already used with a different request."
+
+
+class InvalidIdempotencyKeyError(OrderServiceError):
+    default_message = "Idempotency-Key must be 8-128 characters of letters, digits, - or _."

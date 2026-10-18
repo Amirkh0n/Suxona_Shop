@@ -141,3 +141,34 @@ def notify_seller_order_cancelled(*, order_id: int) -> None:
         templates.order_cancelled_for_seller(order.pk, _customer_name(order.customer)),
         [("Buyurtmalarni ochish", _app("/sotuvchi/buyurtmalar"))],
     )
+
+
+# -- product moderation --------------------------------------------------------
+def notify_admins_product_review(*, product_id: int) -> None:
+    from apps.products.models import Product
+
+    admin_chat_id = settings.TELEGRAM_ADMIN_CHAT_ID
+    if not admin_chat_id:
+        return
+    product = Product.objects.select_related("store").get(pk=product_id)
+    client.send_message(
+        admin_chat_id,
+        templates.new_product_for_review(product.name, product.store.name),
+        links=[("Mahsulotni ko'rib chiqish", _admin(f"products/product/{product.pk}/change/"))],
+    )
+
+
+def notify_seller_product_moderated(*, product_id: int) -> None:
+    from apps.common.enums import ProductStatus
+    from apps.products.models import Product
+
+    product = Product.objects.select_related("store__owner").get(pk=product_id)
+    if product.status == ProductStatus.ACTIVE:
+        text = templates.product_approved(product.name)
+    else:
+        text = templates.product_rejected(product.name, product.moderation_note)
+    _notify_user(
+        product.store.owner,
+        text,
+        [("Mahsulotni ochish", _app(f"/sotuvchi/mahsulotlar/{product.pk}"))],
+    )

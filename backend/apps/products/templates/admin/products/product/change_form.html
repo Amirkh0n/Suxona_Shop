@@ -1,0 +1,22 @@
+{% extends "admin/change_form.html" %}
+{% comment %}
+  Approve / Reject buttons for a product that is PENDING_REVIEW. They post to
+  ProductAdmin.response_change, which runs ApproveProductService /
+  RejectProductService (records the reviewer and notifies the seller on
+  Telegram). For Reject, the "Moderation note" field is the reason sent to the seller.
+{% endcomment %}
+{% block submit_buttons_bottom %}
+  {% if original and original.status == "PENDING_REVIEW" %}
+    <div class="sx-review-actions">
+      <button type="submit" name="_approve" value="1" class="btn btn-success btn-block"
+              onclick="return confirm('Mahsulotni tasdiqlab, xaridorlarga ko\'rsatamizmi?');">
+        ✅ Tasdiqlash
+      </button>
+      <button type="submit" name="_reject" value="1" class="btn btn-danger btn-block"
+              onclick="return confirm('Mahsulotni rad etamizmi? Izoh sotuvchiga yuboriladi.');">
+        ❌ Rad etish
+      </button>
+    </div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

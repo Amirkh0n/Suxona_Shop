@@ -7,27 +7,34 @@
 
   {# --- KPI cards ------------------------------------------------------- #}
   <div class="row">
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg">
       <a class="sx-kpi {% if s.pending_applications %}sx-kpi-alert{% endif %}"
          href="{% url 'admin:stores_storeapplication_changelist' %}?status__exact=PENDING">
         <span class="sx-kpi-icon"><i class="fas fa-file-signature"></i></span>
         <span class="sx-kpi-body"><b>{{ s.pending_applications }}</b><small>Kutilayotgan arizalar</small></span>
       </a>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg">
       <a class="sx-kpi {% if s.pending_orders %}sx-kpi-warn{% endif %}"
          href="{% url 'admin:orders_order_changelist' %}?status__exact=PENDING">
         <span class="sx-kpi-icon"><i class="fas fa-shopping-bag"></i></span>
         <span class="sx-kpi-body"><b>{{ s.pending_orders }}</b><small>Yangi buyurtmalar ({{ s.orders_today }} ta bugun)</small></span>
       </a>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg">
+      <a class="sx-kpi {% if s.pending_products %}sx-kpi-alert{% endif %}"
+         href="{% url 'admin:products_product_changelist' %}?status__exact=PENDING_REVIEW">
+        <span class="sx-kpi-icon"><i class="fas fa-box-open"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.pending_products }}</b><small>Moderatsiya kutilmoqda</small></span>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
       <a class="sx-kpi" href="{% url 'admin:orders_order_changelist' %}?status__exact=COMPLETED">
         <span class="sx-kpi-icon"><i class="fas fa-coins"></i></span>
         <span class="sx-kpi-body"><b>{{ s.revenue_30d|floatformat:0 }}</b><small>So'm · 30 kunlik savdo</small></span>
       </a>
     </div>
-    <div class="col-6 col-lg-3">
+    <div class="col-6 col-lg">
       <a class="sx-kpi {% if s.low_stock %}sx-kpi-warn{% endif %}"
          href="{% url 'admin:products_product_changelist' %}">
         <span class="sx-kpi-icon"><i class="fas fa-box-open"></i></span>

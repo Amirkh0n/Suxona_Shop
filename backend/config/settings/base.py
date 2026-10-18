@@ -14,6 +14,11 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-environment")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# Needed for the Django admin login (CSRF) when the site is served over https
+# behind a proxy, e.g. https://api.example.com
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
 
 DJANGO_APPS = [
     # Admin UI (AdminLTE). Must come before django.contrib.admin.
@@ -72,6 +77,11 @@ _cors_origins = [
 CORS_ALLOWED_ORIGINS = _cors_origins
 CORS_ALLOW_ALL_ORIGINS = not _cors_origins and DEBUG
 CORS_ALLOW_CREDENTIALS = True
+# Browsers only send custom headers cross-origin if the server allows them.
+from corsheaders.defaults import default_headers  # noqa: E402
+
+CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
+CORS_EXPOSE_HEADERS = ["Idempotent-Replayed"]
 
 ROOT_URLCONF = "config.urls"
 

@@ -81,3 +81,22 @@ class MinImagesError(ProductServiceError):
 
 class InvalidImageOrderError(ProductServiceError):
     default_message = "Reorder list must contain exactly the product's image ids."
+
+
+class ProductNotApprovedError(ProductServiceError):
+    default_message = (
+        "This product has not been approved yet. Submit it for review "
+        "(PENDING_REVIEW) first."
+    )
+
+
+class ProductNeedsImageError(ProductServiceError):
+    default_message = "Add at least one image before submitting the product for review."
+
+
+class ProductStatusForbiddenError(ProductServiceError):
+    default_message = "You cannot set this product status."
+
+
+class ProductNotPendingReviewError(ProductServiceError):
+    default_message = "Only products pending review can be approved or rejected."

@@ -35,6 +35,8 @@ STORE_APPLICATION_STATUS_COLORS = {
 
 PRODUCT_STATUS_COLORS = {
     "DRAFT": "#6b7280",
+    "PENDING_REVIEW": "#3b82f6",
+    "REJECTED": "#ef4444",
     "ACTIVE": "#10b981",
     "OUT_OF_STOCK": "#f59e0b",
     "HIDDEN": "#9ca3af",

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db.models import Count
+from django.http import HttpResponseRedirect
 
 from apps.common.admin import (
     PRODUCT_STATUS_COLORS,
@@ -90,16 +91,30 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ("status", "category")
     search_fields = ("name", "store__name")
     autocomplete_fields = ("store", "category")
-    readonly_fields = ("created_at", "updated_at")
+    change_form_template = "admin/products/product/change_form.html"
+    # Status and review fields change only through the moderation services /
+    # actions, so approvals are audited and the seller is notified.
+    readonly_fields = (
+        "status",
+        "approved_at",
+        "reviewed_by",
+        "reviewed_at",
+        "created_at",
+        "updated_at",
+    )
 
     fieldsets = (
         (None, {"fields": ("store", "category", "name", "description")}),
         ("Pricing & stock", {"fields": ("price", "stock", "status")}),
+        (
+            "Moderation",
+            {"fields": ("moderation_note", "approved_at", "reviewed_by", "reviewed_at")},
+        ),
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
 
     inlines = (ProductImageInline, ProductVariantInline)
-    actions = ("activate_products", "archive_products")
+    actions = ("approve_products", "reject_products", "archive_products")
 
     def get_queryset(self, request):
         return (
@@ -132,10 +147,44 @@ class ProductAdmin(admin.ModelAdmin):
             obj.get_status_display(),
         )
 
-    @admin.action(description="Activate selected products")
-    def activate_products(self, request, queryset):
-        updated = queryset.update(status=ProductStatus.ACTIVE)
-        self.message_user(request, f"{updated} product(s) activated.")
+    # -- moderation ---------------------------------------------------------
+    def response_change(self, request, obj):
+        if "_approve" in request.POST:
+            self._moderate(request, obj, approve=True)
+            return HttpResponseRedirect(request.path)
+        if "_reject" in request.POST:
+            # obj already carries the note typed into the form.
+            self._moderate(request, obj, approve=False, note=obj.moderation_note)
+            return HttpResponseRedirect(request.path)
+        return super().response_change(request, obj)
+
+    def _moderate(self, request, product, *, approve: bool, note: str = "") -> bool:
+        from apps.common.exceptions import ServiceError
+        from apps.products.services import ApproveProductService, RejectProductService
+
+        try:
+            if approve:
+                ApproveProductService.execute(product=product, reviewed_by=request.user)
+            else:
+                RejectProductService.execute(
+                    product=product, note=note, reviewed_by=request.user
+                )
+        except ServiceError as exc:
+            self.message_user(request, f"{product.name}: {exc}", level=messages.ERROR)
+            return False
+        verb = "tasdiqlandi" if approve else "rad etildi"
+        self.message_user(request, f"«{product.name}» {verb}.")
+        return True
+
+    @admin.action(description="Approve selected products (pending review)")
+    def approve_products(self, request, queryset):
+        for product in queryset:
+            self._moderate(request, product, approve=True)
+
+    @admin.action(description="Reject selected products (no reason given)")
+    def reject_products(self, request, queryset):
+        for product in queryset:
+            self._moderate(request, product, approve=False)
 
     @admin.action(description="Archive (hide) selected products")
     def archive_products(self, request, queryset):

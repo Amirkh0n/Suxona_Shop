@@ -62,6 +62,9 @@ def dashboard_stats() -> dict:
     return {
         "pending_applications": pending_applications.count(),
         "pending_orders": Order.objects.filter(status=OrderStatus.PENDING).count(),
+        "pending_products": Product.objects.filter(
+            status=ProductStatus.PENDING_REVIEW
+        ).count(),
         "orders_today": Order.objects.filter(created_at__date=today).count(),
         "revenue_30d": revenue,
         "active_stores": Store.objects.filter(status=StoreStatus.ACTIVE).count(),

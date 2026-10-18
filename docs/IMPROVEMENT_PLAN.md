@@ -55,3 +55,15 @@ Sentry, health endpoint, zaxira (backup) rejasi, staging muhit, Redis+Celery (xa
 
 **E. Frontend**
 Admin API ulanishlari, sotuvchi buyurtma bildirishnomalari, PWA offline, testlar (Vitest).
+
+## Round 4 — order flow, idempotency, moderation
+
+| # | Change |
+|---|--------|
+| 1 | **Order state machine** (`apps/orders/state_machine.py`): one `ALLOWED_TRANSITIONS` table, every service goes through `apply_transition` (row lock + restock). Cancel rules per role: customer from PENDING, seller from ACCEPTED, staff from any non-terminal. Admin `status` field is read-only; admin gets a *cancel* action. |
+| 2 | **Idempotent checkout**: `Idempotency-Key` header on `POST /orders` (`IdempotencyKey` model, migration `orders/0004`). Replay → 200 + `Idempotent-Replayed: true`; same key, other payload → 422; failed checkout leaves no key. Frontend sends a UUID per distinct payload. Cleanup: `manage.py purge_idempotency_keys` (cron, daily). |
+| 3 | **Product moderation**: statuses `PENDING_REVIEW`, `REJECTED`; fields `approved_at/reviewed_by/reviewed_at/moderation_note` (migrations `products/0005-0006`, existing live products are backfilled as approved). Sellers cannot self-activate unapproved products; submitting needs >=1 image. Admin approves/rejects on the product page (buttons) or via bulk action; seller and admins get Telegram messages. Non-public products (draft/pending/rejected/hidden) now 404 for strangers. |
+| 4 | Tests: 59 total. |
+
+Known limits: editing an already-approved product does not trigger re-review; list endpoints still return page 1 only in the seller UI.
+

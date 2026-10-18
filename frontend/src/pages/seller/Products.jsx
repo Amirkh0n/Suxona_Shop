@@ -9,6 +9,8 @@ import { PlusIcon } from '../../components/Icons';
 const STATUS_CLASS = {
   ACTIVE: 'badge-accepted',
   DRAFT: 'badge-pending',
+  PENDING_REVIEW: 'badge-pending',
+  REJECTED: 'badge-cancelled',
   OUT_OF_STOCK: 'badge-cancelled',
   HIDDEN: 'badge-cancelled',
 };

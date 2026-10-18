@@ -41,6 +41,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
+    is_approved = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_approved(self, obj) -> bool:
+        return obj.approved_at is not None
 
     class Meta:
         model = Product
@@ -55,6 +60,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "status",
             "images",
             "variants",
+            "moderation_note",
+            "is_approved",
             "created_at",
             "updated_at",
         ]

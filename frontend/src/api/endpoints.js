@@ -99,8 +99,14 @@ export const deliveryZoneApi = {
 
 /* ---------- Orders ---------- */
 export const orderApi = {
-  create: (storeId, addressId, note) =>
-    api.post('/orders', { store_id: storeId, address_id: addressId, note }),
+  // idempotencyKey makes the call safe to retry (double click, flaky network):
+  // the backend returns the original order instead of creating a second one.
+  create: (storeId, addressId, note, idempotencyKey) =>
+    api.post(
+      '/orders',
+      { store_id: storeId, address_id: addressId, note },
+      idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined
+    ),
   retrieve: (id) => api.get(`/orders/${id}`),
   my: (params) => api.get('/orders/my', { params }),
   storeOrders: (params) => api.get('/orders/store', { params }),

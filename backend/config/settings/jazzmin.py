@@ -29,6 +29,11 @@ JAZZMIN_SETTINGS = {
             "permissions": ["stores.view_storeapplication"],
         },
         {
+            "name": "Moderatsiya",
+            "url": "/admin/products/product/?status__exact=PENDING_REVIEW",
+            "permissions": ["products.view_product"],
+        },
+        {
             "name": "Buyurtmalar",
             "url": "/admin/orders/order/?status__exact=PENDING",
             "permissions": ["orders.view_order"],
