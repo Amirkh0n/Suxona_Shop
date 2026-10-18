@@ -46,6 +46,8 @@ export const ORDER_STATUS_CLASS = {
 
 export const PRODUCT_STATUS_LABELS = {
   DRAFT: 'Qoralama',
+  PENDING_REVIEW: 'Moderatsiyada',
+  REJECTED: 'Rad etilgan',
   ACTIVE: 'Faol',
   OUT_OF_STOCK: 'Tugagan',
   HIDDEN: 'Yashirilgan',

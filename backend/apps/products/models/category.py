@@ -17,6 +17,8 @@ class Category(BaseModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "Kategoriya"
+        verbose_name_plural = "Kategoriyalar"
         indexes = [
             models.Index(fields=["parent"], name="category_parent_idx"),
             models.Index(fields=["name"], name="category_name_idx"),

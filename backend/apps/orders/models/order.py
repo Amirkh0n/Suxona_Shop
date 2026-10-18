@@ -33,6 +33,8 @@ class Order(BaseModel):
     note = models.TextField(blank=True)
 
     class Meta:
+        verbose_name = "Buyurtma"
+        verbose_name_plural = "Buyurtmalar"
         indexes = [
             models.Index(fields=["customer"], name="order_customer_idx"),
             models.Index(fields=["store"], name="order_store_idx"),

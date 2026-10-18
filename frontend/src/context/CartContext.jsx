@@ -24,8 +24,8 @@ export function CartProvider({ children }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const addItem = async (productId, quantity = 1) => {
-    await cartApi.addItem(productId, quantity);
+  const addItem = async (productId, quantity = 1, variantId = null) => {
+    await cartApi.addItem(productId, quantity, variantId);
     await refresh();
   };
   const updateItem = async (itemId, quantity) => {

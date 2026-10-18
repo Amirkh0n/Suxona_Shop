@@ -29,19 +29,57 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// The schema exposes /auth/login (access+refresh) and /auth/me but no
-// /auth/refresh endpoint, so a 401 is treated as "session expired" rather
-// than silently refreshed. Wire a real refresh call in here if the backend
-// adds one later.
 let onUnauthorized = null;
 export function setUnauthorizedHandler(fn) {
   onUnauthorized = fn;
 }
 
+// --- Silent access-token refresh -------------------------------------------
+// Access tokens are short-lived (30 min). On a 401 we exchange the refresh
+// token for a new pair via POST /auth/refresh and replay the original request.
+// A single in-flight refresh is shared by all concurrent 401s so parallel
+// requests don't each burn (or race on) the refresh token. A plain axios call
+// (not `api`) is used so this request skips our own interceptors and can't loop.
+let refreshPromise = null;
+
+function refreshTokens() {
+  const refresh = tokenStore.getRefresh();
+  if (!refresh) return Promise.reject(new Error('no refresh token'));
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${BASE_URL}/api/v1/auth/refresh`, { refresh })
+      .then(({ data }) => {
+        tokenStore.setTokens(data.access, data.refresh);
+        return data.access;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+const AUTH_PATHS = ['/auth/login', '/auth/register', '/auth/refresh'];
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const original = error.config;
+    const status = error.response?.status;
+    const isAuthCall = AUTH_PATHS.some((p) => original?.url?.includes(p));
+
+    if (status === 401 && original && !original._retried && !isAuthCall && tokenStore.getRefresh()) {
+      original._retried = true;
+      try {
+        const access = await refreshTokens();
+        original.headers.Authorization = `Bearer ${access}`;
+        return api(original);
+      } catch {
+        // Refresh token is expired/invalid: fall through to logout.
+      }
+    }
+
+    if (status === 401 && !isAuthCall) {
       tokenStore.clear();
       if (onUnauthorized) onUnauthorized();
     }

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { extractErrorMessage } from '../../api/client';
 import { useCart } from '../../context/CartContext';
 import { formatSum } from '../../utils/format';
+import { linePrice, variantLabel, availableStock } from '../../utils/variants';
 import { resolveImageUrl } from '../../utils/media';
 import { PageSpinner } from '../../components/Spinner';
 import QuantityStepper from '../../components/QuantityStepper';
@@ -13,11 +15,21 @@ export default function Cart() {
 
   const stores = cart?.stores || [];
 
-  const changeQty = async (itemId, qty) => {
+  const [itemError, setItemError] = useState('');
+
+  const changeQty = async (item, qty) => {
     if (qty < 1) return;
-    setBusyItem(itemId);
+    const limit = availableStock(item.product, item.variant);
+    if (limit != null && qty > limit) {
+      setItemError(`"${item.product?.name}" omborda faqat ${limit} dona bor.`);
+      return;
+    }
+    setItemError('');
+    setBusyItem(item.id);
     try {
-      await updateItem(itemId, qty);
+      await updateItem(item.id, qty);
+    } catch (err) {
+      setItemError(extractErrorMessage(err, "Miqdorni o'zgartirib bo'lmadi."));
     } finally {
       setBusyItem(null);
     }
@@ -33,7 +45,7 @@ export default function Cart() {
   };
 
   const storeSubtotal = (group) =>
-    (group.items || []).reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
+    (group.items || []).reduce((sum, item) => sum + linePrice(item) * item.quantity, 0);
 
   if (loading && !cart) return <PageSpinner />;
 
@@ -53,6 +65,7 @@ export default function Cart() {
   return (
     <div className="container page" style={{ paddingBottom: stores.length ? 100 : undefined }}>
       <h1>Savat</h1>
+      {itemError && <div className="alert alert-error">{itemError}</div>}
 
       {stores.map((group) => {
         const items = group.items || [];
@@ -81,14 +94,15 @@ export default function Cart() {
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div className="cart-item-name">{item.product?.name}</div>
-                        <div className="cart-item-price">{formatSum(item.product?.price)}</div>
+                        {item.variant && <div className="cart-item-variant">{variantLabel(item.variant)}</div>}
+                        <div className="cart-item-price">{formatSum(linePrice(item))}</div>
                       </div>
                     </Link>
                     <div className="cart-item-actions">
                       <QuantityStepper
                         value={item.quantity}
                         disabled={busyItem === item.id}
-                        onChange={(q) => changeQty(item.id, q)}
+                        onChange={(q) => changeQty(item, q)}
                         size="sm"
                       />
                       <button type="button" className="cart-item-remove" disabled={busyItem === item.id} onClick={() => remove(item.id)} aria-label="O'chirish">

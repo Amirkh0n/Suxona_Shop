@@ -1,0 +1,32 @@
+/* SuxonaShop admin polish on top of Jazzmin/AdminLTE */
+:root { --sx-green: #16a34a; --sx-green-soft: #e7f6ec; }
+
+.brand-link .brand-image { max-height: 34px; width: auto; margin-top: -4px; }
+.brand-link .brand-text { font-weight: 800; letter-spacing: .2px; }
+
+/* --- dashboard KPI cards --- */
+.sx-kpi { display:flex; align-items:center; gap:14px; padding:16px; margin-bottom:16px;
+  background: var(--bs-body-bg, #fff); border:1px solid rgba(128,128,128,.2); border-radius:14px;
+  color: inherit; text-decoration:none; transition: transform .12s, box-shadow .12s; }
+.sx-kpi:hover { transform: translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.08); color: inherit; text-decoration:none; }
+.sx-kpi-icon { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background: var(--sx-green-soft); color: var(--sx-green); font-size:1.2rem; flex-shrink:0; }
+.sx-kpi-body b { display:block; font-size:1.55rem; line-height:1.1; }
+.sx-kpi-body small { opacity:.7; }
+.sx-kpi-alert { border-color:#dc2626; }
+.sx-kpi-alert .sx-kpi-icon { background:#fdecec; color:#dc2626; }
+.sx-kpi-warn { border-color:#f59e0b; }
+.sx-kpi-warn .sx-kpi-icon { background:#fef3df; color:#d97706; }
+
+/* --- 7-day bars --- */
+.sx-bars { display:flex; align-items:flex-end; gap:10px; height:150px; padding-top:18px; }
+.sx-bar { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; }
+.sx-bar-fill { width:100%; max-width:38px; background:linear-gradient(180deg,#22c55e,#16a34a); border-radius:8px 8px 3px 3px; display:block; }
+.sx-bar-n { font-size:.75rem; font-weight:700; margin-bottom:3px; }
+.sx-bar-day { font-size:.7rem; opacity:.6; margin-top:5px; }
+.sx-stat-row { display:flex; gap:24px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(128,128,128,.2); }
+
+/* --- forms/lists --- */
+.card { border-radius:12px; }
+.submit-row .btn { margin-right:6px; }
+.sx-review-actions { display:flex; gap:10px; flex-wrap:wrap; padding:12px 0; }

@@ -19,15 +19,16 @@ CI yo'q · Dockerfile root, collectstatic yo'q · admin dizayni standart.
 |---|-----|
 | 1 | **Do'kon arizasi → Store**: admin'da bitta ariza sahifasida "Approve / Reject" tugmalari + ommaviy amallar; `ApproveStoreService` Store yaratadi |
 | 2 | **Audit**: `StoreApplication.reviewed_by / reviewed_at` (migratsiya 0002), REST va admin ikkalasida |
-| 3 | **Telegram bot** (`manage.py run_telegram_bot`, long polling): `/start verify_<token>` ro'yxatdan o'tishni tasdiqlaydi; ariza tasdiqlansa/rad etilsa egasiga xabar; yangi ariza haqida admin chatga xabar (`TELEGRAM_ADMIN_CHAT_ID`) |
+| 3 | **Telegram bot — webhook, sinxron** (`POST /api/v1/telegram/webhook`, secret header bilan): `/start verify_<token>` ro'yxatdan o'tishni tasdiqlaydi; `set_telegram_webhook` buyrug'i. Polling yo'q, asyncio/Celery yo'q |
+| 3a | **Xabarnomalar havola bilan**: yangi ariza → admin; ariza natijasi → ega; yangi buyurtma → sotuvchi; buyurtma holati → mijoz; bekor qilish → sotuvchi |
 | 4 | Xabarlar `transaction.on_commit` orqali (rollback bo'lsa yuborilmaydi), Telegram xatosi asosiy jarayonni buzmaydi |
-| 5 | **Bug fix**: bekor/rad etilgan buyurtma zaxirani qaytaradi (`restock_order_items`) |
+| 5 | **Bug fix**: bekor/rad etilgan buyurtma zaxirani qaytaradi (`restock_order_items`); **checkout Postgres'da variantsiz mahsulotda yiqilardi** (`FOR UPDATE` + outer join) — tuzatildi |
 | 6 | **Xavfsizlik**: CORS allow-list (`DJANGO_CORS_ALLOWED_ORIGINS`, prod'da yopiq), rate-limit (login/register 10/min) |
 | 7 | **Cloudflare R2** `STORAGES` ulandi (`CLOUDFLARE_R2_*`, frontend `VITE_IMAGE_BASE_URL` bilan juft) |
-| 8 | Logging, WhiteNoise (admin static), **django-admin-interface** temasi, admin sarlavhalari |
-| 9 | Docker: non-root, collectstatic, healthcheck, `bot` servisi, `.env` (endi `.env.example` emas) |
+| 8 | Logging, WhiteNoise (admin static), **Jazzmin** admin (maxsus dashboard: KPI, kutilayotgan arizalar, 7 kunlik grafik; o'zbekcha UI), admin sarlavhalari |
+| 9 | Docker: non-root, collectstatic, healthcheck, `.env` (endi `.env.example` emas) |
 | 10 | **CI** (GitHub Actions): ruff, migrations check, pytest, frontend lint+build |
-| 11 | **Testlar**: 13 ta (ariza ko'rib chiqish, admin tugmalari, bot verify, restock, throttle) |
+| 11 | **Testlar**: 31 ta (ariza, admin tugmalari, bot/webhook, xabarnomalar, restock, checkout, throttle) |
 
 ## 3. Keyingi bosqichlar (tavsiya etilgan tartib)
 
@@ -46,12 +47,23 @@ CI yo'q · Dockerfile root, collectstatic yo'q · admin dizayni standart.
 3. Buyurtmalar uchun to'liq holat boshqaruvi + eksport (CSV).
 
 **C. Telegram bot kengaytmasi**
-1. Buyurtma holati o'zgarganda mijozga, yangi buyurtma kelganda sotuvchiga xabar.
-2. Webhook rejimi (prod): `handle_update` allaqachon sof funksiya.
-3. Bot ichida buyurtmani qabul/rad etish tugmalari (inline keyboard).
+1. Telegram yuborish hozir so'rov ichida sinxron (timeout 5s). Trafik oshsa — Celery/outbox.
+2. Bot ichida buyurtmani qabul/rad etish tugmalari (inline keyboard).
 
 **D. Operatsion**
 Sentry, health endpoint, zaxira (backup) rejasi, staging muhit, Redis+Celery (xabarlar/muddati o'tgan buyurtmalar uchun), to'lov (Payme/Click) — MVP'dan keyin.
 
 **E. Frontend**
 Admin API ulanishlari, sotuvchi buyurtma bildirishnomalari, PWA offline, testlar (Vitest).
+
+## Round 4 — order flow, idempotency, moderation
+
+| # | Change |
+|---|--------|
+| 1 | **Order state machine** (`apps/orders/state_machine.py`): one `ALLOWED_TRANSITIONS` table, every service goes through `apply_transition` (row lock + restock). Cancel rules per role: customer from PENDING, seller from ACCEPTED, staff from any non-terminal. Admin `status` field is read-only; admin gets a *cancel* action. |
+| 2 | **Idempotent checkout**: `Idempotency-Key` header on `POST /orders` (`IdempotencyKey` model, migration `orders/0004`). Replay → 200 + `Idempotent-Replayed: true`; same key, other payload → 422; failed checkout leaves no key. Frontend sends a UUID per distinct payload. Cleanup: `manage.py purge_idempotency_keys` (cron, daily). |
+| 3 | **Product moderation**: statuses `PENDING_REVIEW`, `REJECTED`; fields `approved_at/reviewed_by/reviewed_at/moderation_note` (migrations `products/0005-0006`, existing live products are backfilled as approved). Sellers cannot self-activate unapproved products; submitting needs >=1 image. Admin approves/rejects on the product page (buttons) or via bulk action; seller and admins get Telegram messages. Non-public products (draft/pending/rejected/hidden) now 404 for strangers. |
+| 4 | Tests: 59 total. |
+
+Known limits: editing an already-approved product does not trigger re-review; list endpoints still return page 1 only in the seller UI.
+

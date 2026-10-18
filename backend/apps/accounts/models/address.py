@@ -22,6 +22,8 @@ class Address(BaseModel):
     is_default = models.BooleanField(default=False)
 
     class Meta:
+        verbose_name = "Manzil"
+        verbose_name_plural = "Manzillar"
         indexes = [
             models.Index(fields=["user"], name="address_user_idx"),
             models.Index(fields=["village"], name="address_village_idx"),

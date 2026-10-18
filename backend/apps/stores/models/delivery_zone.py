@@ -19,6 +19,8 @@ class DeliveryZone(BaseModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "Yetkazib berish hududi"
+        verbose_name_plural = "Yetkazib berish hududlari"
         indexes = [
             models.Index(fields=["store"], name="delivery_zone_store_idx"),
             models.Index(fields=["village"], name="delivery_zone_village_idx"),

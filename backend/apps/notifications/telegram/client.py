@@ -1,10 +1,10 @@
-"""Thin wrapper around the Telegram Bot HTTP API.
+"""Thin, synchronous wrapper around the Telegram Bot HTTP API.
 
-Deliberately not built on a bot framework (python-telegram-bot/aiogram):
-the bot only needs to (a) send messages to known chat ids and (b) long-poll
-for the handful of commands handled in ``apps.notifications.telegram.bot``,
-so a small ``requests``-based client keeps the dependency footprint minimal
-and makes every HTTP call to Telegram explicit and easy to trace.
+Everything here is plain blocking ``requests`` calls — no asyncio, no bot
+framework. Incoming updates arrive via webhook (see
+``apps.notifications.views.TelegramWebhookView``) and outgoing messages are
+sent with ``sendMessage`` from inside the request/transaction that triggered
+them, so there is no background worker or event loop to run.
 """
 
 from __future__ import annotations
@@ -18,10 +18,12 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 API_BASE = "https://api.telegram.org"
-# Generous but bounded: this is used both for sendMessage (should return
-# fast) and for long-polling getUpdates (which blocks server-side for up to
-# `timeout` seconds), so the HTTP client timeout must exceed the poll timeout.
-DEFAULT_TIMEOUT = 15
+# Calls happen synchronously inside web requests, so keep the ceiling low: a
+# slow Telegram must not hold a gunicorn worker for long.
+DEFAULT_TIMEOUT = 5
+
+# (button label, url)
+Link = tuple[str, str]
 
 
 class TelegramNotConfigured(Exception):
@@ -39,7 +41,7 @@ def _call(
     method: str,
     payload: dict[str, Any] | None = None,
     timeout: int = DEFAULT_TIMEOUT,
-) -> dict:
+) -> Any:
     url = f"{API_BASE}/bot{_token()}/{method}"
     response = requests.post(url, json=payload or {}, timeout=timeout)
     data = response.json()
@@ -48,18 +50,49 @@ def _call(
     return data["result"]
 
 
-def send_message(chat_id: str | int, text: str, *, parse_mode: str = "HTML") -> dict | None:
+def _keyboard(links: list[Link]) -> dict | None:
+    """Inline URL buttons, one per row.
+
+    Telegram rejects the *whole message* if any button URL is not https, so
+    non-https links (e.g. http://localhost in development) are skipped here
+    and rendered as plain text by ``_with_text_links`` instead.
+    """
+    rows = [[{"text": label, "url": url}] for label, url in links if url.startswith("https://")]
+    return {"inline_keyboard": rows} if rows else None
+
+
+def _with_text_links(text: str, links: list[Link]) -> str:
+    plain = [(label, url) for label, url in links if not url.startswith("https://")]
+    if not plain:
+        return text
+    return text + "\n\n" + "\n".join(f"🔗 {label}: {url}" for label, url in plain)
+
+
+def send_message(
+    chat_id: str | int,
+    text: str,
+    *,
+    links: list[Link] | None = None,
+    parse_mode: str = "HTML",
+) -> dict | None:
     """Send a message, logging (not raising) on failure.
 
     Notification delivery must never break the caller's transaction (e.g. a
     store approval must still succeed even if Telegram is unreachable), so
     every failure mode here is caught and logged rather than propagated.
     """
+    links = links or []
+    payload: dict[str, Any] = {
+        "chat_id": chat_id,
+        "text": _with_text_links(text, links),
+        "parse_mode": parse_mode,
+        "disable_web_page_preview": True,
+    }
+    keyboard = _keyboard(links)
+    if keyboard:
+        payload["reply_markup"] = keyboard
     try:
-        return _call(
-            "sendMessage",
-            {"chat_id": chat_id, "text": text, "parse_mode": parse_mode},
-        )
+        return _call("sendMessage", payload)
     except TelegramNotConfigured:
         logger.warning("Telegram message not sent (bot not configured): %s", text[:80])
     except Exception:  # noqa: BLE001 - best-effort notification, never crash callers
@@ -67,16 +100,26 @@ def send_message(chat_id: str | int, text: str, *, parse_mode: str = "HTML") -> 
     return None
 
 
-def get_updates(offset: int | None = None, timeout: int = 30) -> list[dict]:
-    """Long-poll for new updates. Used by the `run_telegram_bot` management command."""
-    payload: dict[str, Any] = {"timeout": timeout}
-    if offset is not None:
-        payload["offset"] = offset
-    return _call("getUpdates", payload, timeout=timeout + DEFAULT_TIMEOUT)
+# -- webhook management (used by the set/delete/info management commands) ------
+def set_webhook(url: str, *, secret_token: str, drop_pending_updates: bool = False) -> bool:
+    return _call(
+        "setWebhook",
+        {
+            "url": url,
+            "secret_token": secret_token,
+            "allowed_updates": ["message"],
+            "drop_pending_updates": drop_pending_updates,
+        },
+    )
+
+
+def delete_webhook(*, drop_pending_updates: bool = False) -> bool:
+    return _call("deleteWebhook", {"drop_pending_updates": drop_pending_updates})
+
+
+def get_webhook_info() -> dict:
+    return _call("getWebhookInfo")
 
 
 def set_my_commands(commands: list[dict[str, str]]) -> None:
-    try:
-        _call("setMyCommands", {"commands": commands})
-    except Exception:  # noqa: BLE001
-        logger.exception("Failed to register bot commands")
+    _call("setMyCommands", {"commands": commands})

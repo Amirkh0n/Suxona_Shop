@@ -1,19 +1,22 @@
 {% extends "admin/change_form.html" %}
 {% comment %}
-  Adds one-click Approve / Reject to a *pending* store application.
+  One-click Approve / Reject for a *pending* store application.
   Both post back to StoreApplicationAdmin.response_change, which runs the
-  real ApproveStoreService / RejectStoreService (creates the Store,
-  records the reviewer, notifies the applicant via Telegram).
-  For Reject, the "Admin note" field above is sent to the applicant as the reason.
+  real ApproveStoreService / RejectStoreService (creates the Store, records
+  the reviewer, notifies the applicant on Telegram). For Reject, the
+  "Admin note" field is sent to the applicant as the reason.
 {% endcomment %}
 {% block submit_buttons_bottom %}
   {% if original and original.status == "PENDING" %}
-    <div class="submit-row">
-      <input type="submit" name="_approve" value="✅ Approve → create store" class="default"
-             onclick="return confirm('Approve this application and create the store?');">
-      <input type="submit" name="_reject" value="❌ Reject (sends note to applicant)"
-             style="background:#ba2121;color:#fff;"
-             onclick="return confirm('Reject this application?');">
+    <div class="sx-review-actions">
+      <button type="submit" name="_approve" value="1" class="btn btn-success btn-block"
+              onclick="return confirm('Arizani tasdiqlab, do\'konni yaratamizmi?');">
+        ✅ Tasdiqlash
+      </button>
+      <button type="submit" name="_reject" value="1" class="btn btn-danger btn-block"
+              onclick="return confirm('Arizani rad etamizmi? Izoh arizachiga yuboriladi.');">
+        ❌ Rad etish
+      </button>
     </div>
   {% endif %}
   {{ block.super }}

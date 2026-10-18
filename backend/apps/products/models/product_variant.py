@@ -24,6 +24,8 @@ class ProductVariant(BaseModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "Mahsulot varianti"
+        verbose_name_plural = "Mahsulot variantlari"
         indexes = [
             models.Index(fields=["product"], name="variant_product_idx"),
             models.Index(fields=["sku"], name="variant_sku_idx"),

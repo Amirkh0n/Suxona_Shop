@@ -37,6 +37,8 @@ class VerificationToken(BaseModel):
     consumed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        verbose_name = "Tasdiqlash tokeni"
+        verbose_name_plural = "Tasdiqlash tokenlari"
         indexes = [
             models.Index(fields=["token"], name="verification_token_idx"),
             models.Index(fields=["user"], name="verification_user_idx"),

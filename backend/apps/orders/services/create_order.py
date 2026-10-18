@@ -4,6 +4,7 @@ from django.db import transaction
 
 from apps.accounts.models import Address, User
 from apps.common.enums import OrderStatus, ProductStatus, StoreStatus
+from apps.notifications.telegram.services import after_commit, notify_seller_new_order
 from apps.orders.exceptions import (
     AddressOwnershipError,
     CartNotFoundError,
@@ -41,8 +42,13 @@ class CreateOrderService:
         except Cart.DoesNotExist as exc:
             raise CartNotFoundError() from exc
 
+        # of=("self",): lock only the cart-item rows. Without it Postgres tries
+        # to lock the joined product/variant rows too and rejects the query
+        # ("FOR UPDATE cannot be applied to the nullable side of an outer
+        # join") for any item without a variant. Products and variants are
+        # locked explicitly just below.
         cart_items = list(
-            CartItem.objects.select_for_update()
+            CartItem.objects.select_for_update(of=("self",))
             .select_related("product", "variant")
             .filter(cart=cart, product__store=store)
         )
@@ -139,5 +145,7 @@ class CreateOrderService:
                 product.save(update_fields=["stock", "updated_at"])
 
         CartItem.objects.filter(pk__in=[item.pk for item in cart_items]).delete()
+
+        after_commit(notify_seller_new_order, order_id=order.pk)
 
         return order

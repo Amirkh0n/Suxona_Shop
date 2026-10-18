@@ -27,6 +27,8 @@ class OrderItem(BaseModel):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
+        verbose_name = "Buyurtma elementi"
+        verbose_name_plural = "Buyurtma elementlari"
         indexes = [
             models.Index(fields=["order"], name="order_item_order_idx"),
             models.Index(fields=["product"], name="order_item_product_idx"),

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { linePrice, variantLabel, availableStock } from '../../utils/variants';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addressApi, orderApi, productApi, storeApi, villageApi } from '../../api/endpoints';
 import { useCart } from '../../context/CartContext';
@@ -49,7 +50,7 @@ export default function Checkout() {
 
   const group = (cart?.stores || []).find((g) => String(g.store_id) === String(storeId));
   const items = group?.items || [];
-  const subtotal = items.reduce((sum, item) => sum + Number(item.product?.price || 0) * item.quantity, 0);
+  const subtotal = items.reduce((sum, item) => sum + linePrice(item) * item.quantity, 0);
   const deliveryEstimate = matchedZone ? Number(matchedZone.delivery_price) : null;
   const totalEstimate = deliveryEstimate != null ? subtotal + deliveryEstimate : null;
 
@@ -65,10 +66,16 @@ export default function Checkout() {
       const problems = [];
       fresh.forEach(({ data: product }, idx) => {
         const item = items[idx];
-        const outOfStock = product.status === 'OUT_OF_STOCK';
-        const insufficient = product.stock != null && product.stock < item.quantity;
-        if (outOfStock) problems.push(`"${product.name}" sotuvda yo'q.`);
-        else if (insufficient) problems.push(`"${product.name}" omborda faqat ${product.stock} dona qoldi (savatda ${item.quantity} dona).`);
+        const freshVariant = item.variant
+          ? (product.variants || []).find((v) => v.id === item.variant.id)
+          : null;
+        const name = item.variant ? `${product.name} (${variantLabel(item.variant)})` : product.name;
+        const outOfStock =
+          product.status === 'OUT_OF_STOCK' || (item.variant && (!freshVariant || !freshVariant.is_active));
+        const stock = availableStock(product, freshVariant);
+        const insufficient = stock != null && stock < item.quantity;
+        if (outOfStock) problems.push(`"${name}" sotuvda yo'q.`);
+        else if (insufficient) problems.push(`"${name}" omborda faqat ${stock} dona qoldi (savatda ${item.quantity} dona).`);
       });
       if (problems.length > 0) {
         setError(`Ba'zi mahsulotlar mavjud emas: ${problems.join(' ')} Iltimos, savatni yangilang.`);
@@ -92,13 +99,31 @@ export default function Checkout() {
     setStep(2);
   };
 
+  // One key per distinct order payload: retries of the same payload reuse it
+  // (so the server replays instead of duplicating); a changed address/note gets
+  // a fresh key, since the server rejects a key reused with a different body.
+  const keyRef = useRef({ sig: '', key: '' });
+  const idempotencyKeyFor = (sig) => {
+    if (keyRef.current.sig !== sig) {
+      keyRef.current = { sig, key: crypto.randomUUID() };
+    }
+    return keyRef.current.key;
+  };
+
   const submitOrder = async () => {
+    if (submitting) return; // ignore double clicks outright
     setError('');
     const ok = await revalidateStock();
     if (!ok) return;
     setSubmitting(true);
     try {
-      const { data } = await orderApi.create(Number(storeId), Number(addressId), note || undefined);
+      const sig = `${storeId}|${addressId}|${note || ''}`;
+      const { data } = await orderApi.create(
+        Number(storeId),
+        Number(addressId),
+        note || undefined,
+        idempotencyKeyFor(sig)
+      );
       await refreshCart();
       navigate(`/buyurtma-qabul-qilindi/${data.id}`, { replace: true });
     } catch (err) {
@@ -186,8 +211,8 @@ export default function Checkout() {
             <div className="review-card-title">{group?.store_name}</div>
             {items.map((item) => (
               <div key={item.id} className="review-item-row">
-                <span className="muted">{item.product?.name} × {item.quantity}</span>
-                <span>{formatSum(Number(item.product?.price || 0) * item.quantity)}</span>
+                <span className="muted">{item.product?.name}{item.variant ? ` (${variantLabel(item.variant)})` : ''} × {item.quantity}</span>
+                <span>{formatSum(linePrice(item) * item.quantity)}</span>
               </div>
             ))}
           </div>

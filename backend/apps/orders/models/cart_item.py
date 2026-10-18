@@ -25,6 +25,8 @@ class CartItem(BaseModel):
     quantity = models.PositiveIntegerField()
 
     class Meta:
+        verbose_name = "Savat elementi"
+        verbose_name_plural = "Savat elementlari"
         indexes = [
             models.Index(fields=["cart"], name="cart_item_cart_idx"),
             models.Index(fields=["product"], name="cart_item_product_idx"),

@@ -14,12 +14,16 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me-in-environment")
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+# Needed for the Django admin login (CSRF) when the site is served over https
+# behind a proxy, e.g. https://api.example.com
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
 
 DJANGO_APPS = [
-    # Admin theme (must come before django.contrib.admin). Colours/logo/title
-    # are editable at runtime under Admin -> Admin Interface -> Themes.
-    "admin_interface",
-    "colorfield",
+    # Admin UI (AdminLTE). Must come before django.contrib.admin.
+    # Configured in config/settings/jazzmin.py.
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -73,13 +77,21 @@ _cors_origins = [
 CORS_ALLOWED_ORIGINS = _cors_origins
 CORS_ALLOW_ALL_ORIGINS = not _cors_origins and DEBUG
 CORS_ALLOW_CREDENTIALS = True
+# Browsers only send custom headers cross-origin if the server allows them.
+from corsheaders.defaults import default_headers  # noqa: E402
+
+CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
+CORS_EXPOSE_HEADERS = ["Idempotent-Replayed"]
 
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # DIRS is searched before app templates, which lets apps/common override
+        # Jazzmin's admin/index.html (the dashboard) — Jazzmin is listed before
+        # our apps in INSTALLED_APPS, so an app-level override would lose.
+        "DIRS": [BASE_DIR / "apps" / "common" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -108,14 +120,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "uz"
 TIME_ZONE = "Asia/Tashkent"
 USE_I18N = True
 USE_TZ = True
 
-# django-admin-interface renders theme previews in iframes.
-X_FRAME_OPTIONS = "SAMEORIGIN"
-SILENCED_SYSTEM_CHECKS = ["security.W019"]
+from .jazzmin import JAZZMIN_SETTINGS, JAZZMIN_UI_TWEAKS  # noqa: E402,F401
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -129,7 +139,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # back for uploaded files; the frontend's VITE_IMAGE_BASE_URL should match it.
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 if os.environ.get("CLOUDFLARE_R2_BUCKET_NAME"):
     STORAGES["default"] = {
@@ -150,6 +160,9 @@ if os.environ.get("CLOUDFLARE_R2_BUCKET_NAME"):
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
+
+# Admin login lands here (Django would otherwise fall back to /accounts/profile/, a 404).
+LOGIN_REDIRECT_URL = "/admin/"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -217,6 +230,13 @@ TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 # store application comes in, so admins don't have to poll the admin site.
 # Leave blank to skip the admin-side notification.
 TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
+
+# Public base URLs used to build links inside Telegram notifications and to
+# register the webhook. SITE_BASE_URL is this backend (admin + webhook),
+# FRONTEND_BASE_URL is the web app users are sent to. Telegram only accepts
+# https:// for webhooks, so SITE_BASE_URL must be https in production.
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "http://localhost:8000").rstrip("/")
+FRONTEND_BASE_URL = os.environ.get("FRONTEND_BASE_URL", "http://localhost:5173").rstrip("/")
 
 # --- Logging ---------------------------------------------------------------
 # No logging config existed before; without one, errors from best-effort

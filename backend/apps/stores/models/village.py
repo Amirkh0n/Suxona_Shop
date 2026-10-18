@@ -9,6 +9,8 @@ class Village(BaseModel):
     is_active = models.BooleanField(default=True)
 
     class Meta:
+        verbose_name = "Qishloq"
+        verbose_name_plural = "Qishloqlar"
         indexes = [
             models.Index(fields=["name"], name="village_name_idx"),
             models.Index(fields=["district"], name="village_district_idx"),

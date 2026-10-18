@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -25,8 +26,24 @@ class Product(BaseModel):
         choices=ProductStatus.choices,
         default=ProductStatus.DRAFT,
     )
+    # --- moderation -------------------------------------------------------
+    # approved_at is set the first time an admin approves the product and is
+    # never cleared: it is what lets the seller hide/show an already-approved
+    # product freely, while a never-approved one must go through review.
+    approved_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_products",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    moderation_note = models.TextField(blank=True)
 
     class Meta:
+        verbose_name = "Mahsulot"
+        verbose_name_plural = "Mahsulotlar"
         indexes = [
             models.Index(fields=["store"], name="product_store_idx"),
             models.Index(fields=["category"], name="product_category_idx"),

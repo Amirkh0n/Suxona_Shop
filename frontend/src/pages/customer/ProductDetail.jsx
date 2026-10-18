@@ -1,22 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '../../api/endpoints';
+import { extractErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { usePreviewNotice } from '../../context/PreviewNoticeContext';
 import { formatSum, PRODUCT_STATUS_LABELS } from '../../utils/format';
+import { availableStock, variantLabel } from '../../utils/variants';
 import { resolveImageUrl } from '../../utils/media';
 import { PageSpinner } from '../../components/Spinner';
 import QuantityStepper from '../../components/QuantityStepper';
 import { BackIcon, HeartIcon, ShareIcon, StarIcon, ChevronRightIcon } from '../../components/Icons';
-
-const DEMO_COLORS = [
-  { id: 'c1', hex: '#1A1D1B' },
-  { id: 'c2', hex: '#6B7280' },
-  { id: 'c3', hex: '#2563EB' },
-];
-const DEMO_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 
 export default function ProductDetail() {
   const { productId } = useParams();
@@ -30,8 +25,7 @@ export default function ProductDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [color, setColor] = useState(DEMO_COLORS[0].id);
-  const [size, setSize] = useState(null);
+  const [variantId, setVariantId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -41,7 +35,15 @@ export default function ProductDetail() {
     let cancelled = false;
     setLoading(true);
     productApi.retrieve(productId)
-      .then(({ data }) => { if (!cancelled) setProduct(data); })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setProduct(data);
+        // Preselect the first variant that can actually be bought.
+        const buyable = (data.variants || []).filter((v) => v.is_active);
+        const first = buyable.find((v) => v.stock == null || v.stock > 0) || buyable[0];
+        setVariantId(first ? first.id : null);
+        setQuantity(1);
+      })
       .catch(() => { if (!cancelled) setProduct(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -61,7 +63,14 @@ export default function ProductDetail() {
   }
 
   const images = product.images?.length ? product.images : [];
-  const outOfStock = product.status === 'OUT_OF_STOCK' || product.stock === 0;
+  const variants = (product.variants || []).filter((v) => v.is_active);
+  const hasVariants = variants.length > 0;
+  const variant = hasVariants ? variants.find((v) => v.id === variantId) || null : null;
+  const stock = availableStock(product, variant);
+  const displayPrice = variant ? variant.effective_price : product.price;
+  const outOfStock =
+    product.status === 'OUT_OF_STOCK' ||
+    (hasVariants ? !variant || variant.stock === 0 : product.stock === 0);
   const favorite = isFavorite(product.id);
 
   const showPrev = () => setActiveImage((i) => (i === 0 ? images.length - 1 : i - 1));
@@ -79,14 +88,15 @@ export default function ProductDetail() {
 
   const handleAddToCart = async () => {
     setError('');
+    if (hasVariants && !variant) { setError('Iltimos, variantni tanlang.'); return; }
     if (!user) { navigate('/kirish', { state: { from: { pathname: `/mahsulot/${productId}` } } }); return; }
     setAdding(true);
     try {
-      await addItem(product.id, quantity);
+      await addItem(product.id, quantity, variant?.id ?? null);
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
-    } catch {
-      setError("Savatga qo'shishda xatolik yuz berdi.");
+    } catch (err) {
+      setError(extractErrorMessage(err, "Savatga qo'shishda xatolik yuz berdi."));
     } finally {
       setAdding(false);
     }
@@ -135,7 +145,7 @@ export default function ProductDetail() {
 
       <div className="product-detail-sheet container">
         <div className="product-detail-name">{product.name}</div>
-        <div className="product-detail-price">{formatSum(product.price)}</div>
+        <div className="product-detail-price">{formatSum(displayPrice)}</div>
 
         <div className="product-detail-store-row">
           {product.store && (
@@ -152,39 +162,32 @@ export default function ProductDetail() {
 
         {outOfStock ? (
           <span className="badge badge-cancelled" style={{ marginBottom: 'var(--sp-4)' }}>{PRODUCT_STATUS_LABELS.OUT_OF_STOCK}</span>
-        ) : product.stock != null && (
-          <p style={{ fontSize: 'var(--fs-sm)', marginBottom: 'var(--sp-4)' }}>Omborda: {product.stock} dona</p>
+        ) : stock != null && (
+          <p style={{ fontSize: 'var(--fs-sm)', marginBottom: 'var(--sp-4)' }}>Omborda: {stock} dona</p>
         )}
 
-        <div className="variant-block">
-          <div className="variant-label">Ranglar</div>
-          <div className="variant-swatches">
-            {DEMO_COLORS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className={`variant-swatch${color === c.id ? ' active' : ''}`}
-                style={{ background: c.hex }}
-                onClick={() => setColor(c.id)}
-                aria-label="Rang tanlash"
-              />
-            ))}
+        {hasVariants && (
+          <div className="variant-block">
+            <div className="variant-label">Variant</div>
+            <div className="variant-pills">
+              {variants.map((v) => {
+                const soldOut = v.stock === 0;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`variant-pill${variantId === v.id ? ' active' : ''}`}
+                    style={soldOut ? { opacity: 0.5, textDecoration: 'line-through' } : undefined}
+                    onClick={() => { setVariantId(v.id); setQuantity(1); }}
+                    title={soldOut ? 'Tugagan' : formatSum(v.effective_price)}
+                  >
+                    {variantLabel(v)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-
-        <div className="variant-block">
-          <div className="variant-label">O'lcham</div>
-          <div className="variant-pills">
-            {DEMO_SIZES.map((s) => (
-              <button key={s} type="button" className={`variant-pill${size === s ? ' active' : ''}`} onClick={() => setSize(s)}>
-                {s}
-              </button>
-            ))}
-          </div>
-          <p className="field-hint" style={{ marginTop: 'var(--sp-2)' }}>
-            Rang/o'lcham tanlovi hozircha faqat ko'rinish uchun — buyurtmaga ta'sir qilmaydi.
-          </p>
-        </div>
+        )}
 
         {product.description && (
           <div style={{ marginBottom: 'var(--sp-6)' }}>
@@ -199,7 +202,7 @@ export default function ProductDetail() {
       {!outOfStock && (
         <div className="product-detail-cta">
           <div className="container product-detail-cta-row">
-            <QuantityStepper value={quantity} onChange={setQuantity} />
+            <QuantityStepper value={quantity} onChange={(q) => setQuantity(stock != null ? Math.min(q, stock) : q)} />
             <button className="btn btn-primary product-detail-cta-btn" onClick={handleAddToCart} disabled={adding}>
               {adding ? "Qo'shilmoqda..." : added ? "Qo'shildi ✓" : "Savatga qo'shish"}
             </button>

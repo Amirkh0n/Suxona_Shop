@@ -5,6 +5,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.enums import ProductStatus
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsSeller, IsStoreOwner
 from apps.common.schema import DetailSerializer
@@ -129,15 +130,27 @@ class ProductDetailView(APIView):
     )
     def get(self, request: Request, product_id: int) -> Response:
         product = ProductSelector.get_product_by_id(product_id)
-        if product is None:
+        user = request.user
+        is_owner_or_staff = bool(
+            user
+            and user.is_authenticated
+            and (user.is_staff or product is not None and product.store.owner_id == user.pk)
+        )
+        # Drafts, products under review, rejected and hidden ones are private:
+        # only the owning seller and staff may open them. OUT_OF_STOCK stays
+        # reachable so old links/carts still explain what happened.
+        public_statuses = (ProductStatus.ACTIVE, ProductStatus.OUT_OF_STOCK)
+        if product is None or (
+            product.status not in public_statuses and not is_owner_or_staff
+        ):
             return Response(
                 {"detail": "Product not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        return Response(
-            ProductDetailSerializer(product).data,
-            status=status.HTTP_200_OK,
-        )
+        data = ProductDetailSerializer(product).data
+        if not is_owner_or_staff:
+            data.pop("moderation_note", None)
+        return Response(data, status=status.HTTP_200_OK)
 
     @extend_schema(
         summary="Update a product (store owner)",

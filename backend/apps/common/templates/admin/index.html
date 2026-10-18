@@ -1,0 +1,118 @@
+{% extends "admin/index.html" %}
+{% load i18n static dashboard_tags %}
+
+{% block content %}
+{% dashboard_stats as s %}
+<div class="col-12 sx-dashboard">
+
+  {# --- KPI cards ------------------------------------------------------- #}
+  <div class="row">
+    <div class="col-6 col-lg">
+      <a class="sx-kpi {% if s.pending_applications %}sx-kpi-alert{% endif %}"
+         href="{% url 'admin:stores_storeapplication_changelist' %}?status__exact=PENDING">
+        <span class="sx-kpi-icon"><i class="fas fa-file-signature"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.pending_applications }}</b><small>Kutilayotgan arizalar</small></span>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
+      <a class="sx-kpi {% if s.pending_orders %}sx-kpi-warn{% endif %}"
+         href="{% url 'admin:orders_order_changelist' %}?status__exact=PENDING">
+        <span class="sx-kpi-icon"><i class="fas fa-shopping-bag"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.pending_orders }}</b><small>Yangi buyurtmalar ({{ s.orders_today }} ta bugun)</small></span>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
+      <a class="sx-kpi {% if s.pending_products %}sx-kpi-alert{% endif %}"
+         href="{% url 'admin:products_product_changelist' %}?status__exact=PENDING_REVIEW">
+        <span class="sx-kpi-icon"><i class="fas fa-box-open"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.pending_products }}</b><small>Moderatsiya kutilmoqda</small></span>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
+      <a class="sx-kpi" href="{% url 'admin:orders_order_changelist' %}?status__exact=COMPLETED">
+        <span class="sx-kpi-icon"><i class="fas fa-coins"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.revenue_30d|floatformat:0 }}</b><small>So'm · 30 kunlik savdo</small></span>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
+      <a class="sx-kpi {% if s.low_stock %}sx-kpi-warn{% endif %}"
+         href="{% url 'admin:products_product_changelist' %}">
+        <span class="sx-kpi-icon"><i class="fas fa-box-open"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.low_stock }}</b><small>Zaxirasi ≤ {{ s.low_stock_threshold }} mahsulot</small></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="row">
+    {# --- pending applications -------------------------------------------- #}
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h5 class="m-0"><i class="fas fa-hourglass-half mr-1 me-1"></i> Ko'rib chiqish kutilmoqda</h5></div>
+        <div class="card-body p-0">
+          {% if s.recent_applications %}
+          <table class="table table-sm mb-0">
+            {% for a in s.recent_applications %}
+            <tr>
+              <td><a href="{% url 'admin:stores_storeapplication_change' a.pk %}"><b>{{ a.store_name }}</b></a><br><small class="text-muted">{{ a.owner.phone }}</small></td>
+              <td class="text-muted text-nowrap">{{ a.created_at|timesince }} oldin</td>
+              <td class="text-end text-right"><a class="btn btn-sm btn-success" href="{% url 'admin:stores_storeapplication_change' a.pk %}">Ko'rish</a></td>
+            </tr>
+            {% endfor %}
+          </table>
+          {% else %}
+          <p class="p-3 mb-0 text-muted">🎉 Kutilayotgan ariza yo'q.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# --- orders last 7 days ---------------------------------------------- #}
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h5 class="m-0"><i class="fas fa-chart-bar mr-1 me-1"></i> So'nggi 7 kunlik buyurtmalar</h5></div>
+        <div class="card-body">
+          <div class="sx-bars">
+            {% for d in s.orders_chart %}
+            <div class="sx-bar" title="{{ d.day|date:'d.m' }}: {{ d.n }} ta">
+              <span class="sx-bar-n">{{ d.n }}</span>
+              <span class="sx-bar-fill" style="height: {{ d.pct }}%"></span>
+              <span class="sx-bar-day">{{ d.day|date:"d.m" }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="sx-stat-row">
+            <span><b>{{ s.active_stores }}</b> faol do'kon</span>
+            <span><b>{{ s.users }}</b> foydalanuvchi</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# --- recent orders ------------------------------------------------------ #}
+  <div class="card">
+    <div class="card-header"><h5 class="m-0"><i class="fas fa-receipt mr-1 me-1"></i> So'nggi buyurtmalar</h5></div>
+    <div class="card-body p-0 table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead><tr><th>#</th><th>Do'kon</th><th>Mijoz</th><th>Jami</th><th>Holat</th><th>Vaqt</th></tr></thead>
+        {% for o in s.recent_orders %}
+        <tr>
+          <td><a href="{% url 'admin:orders_order_change' o.pk %}">#{{ o.pk }}</a></td>
+          <td>{{ o.store.name }}</td>
+          <td>{{ o.customer.phone }}</td>
+          <td class="text-nowrap">{{ o.total|floatformat:0 }}</td>
+          <td>{{ o.get_status_display }}</td>
+          <td class="text-muted text-nowrap">{{ o.created_at|timesince }} oldin</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted p-3">Hali buyurtma yo'q.</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  {# --- the standard per-app model lists (Jazzmin) ---------------------- #}
+  <h6 class="text-muted mt-4 mb-2">Barcha bo'limlar</h6>
+</div>
+{{ block.super }}
+{% endblock %}

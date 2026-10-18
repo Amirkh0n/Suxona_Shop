@@ -5,6 +5,7 @@ from .delete_category import DeleteCategoryService
 from .delete_product import DeleteProductService
 from .delete_product_image import DeleteProductImageService
 from .delete_product_variant import DeleteProductVariantService
+from .moderate_product import ApproveProductService, RejectProductService
 from .reorder_product_images import ReorderProductImagesService
 from .update_category import UpdateCategoryService
 from .update_product import UpdateProductService
@@ -12,6 +13,8 @@ from .update_product_variant import UpdateProductVariantService
 from .upload_product_image import UploadProductImageService
 
 __all__ = [
+    "ApproveProductService",
+    "RejectProductService",
     "CreateCategoryService",
     "CreateProductService",
     "CreateProductVariantService",
