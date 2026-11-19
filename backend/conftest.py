@@ -61,3 +61,9 @@ def shop(db, staff):
 def address(user):
     village = Village.objects.create(name="V", district="D")
     return Address.objects.create(user=user, village=village, street="s", house="1")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_media(settings, tmp_path):
+    """Keep test uploads out of the repo's media/ directory."""
+    settings.MEDIA_ROOT = str(tmp_path / "media")
