@@ -24,6 +24,8 @@ DEFAULT_TIMEOUT = 5
 
 # (button label, url)
 Link = tuple[str, str]
+# (button label, callback_data) - tapping sends a callback_query to the webhook
+Action = tuple[str, str]
 
 
 class TelegramNotConfigured(Exception):
@@ -50,14 +52,19 @@ def _call(
     return data["result"]
 
 
-def _keyboard(links: list[Link]) -> dict | None:
-    """Inline URL buttons, one per row.
+def _keyboard(links: list[Link], actions: list[list[Action]] | None = None) -> dict | None:
+    """Inline keyboard: callback ``actions`` (rows) first, then URL ``links``.
 
     Telegram rejects the *whole message* if any button URL is not https, so
     non-https links (e.g. http://localhost in development) are skipped here
     and rendered as plain text by ``_with_text_links`` instead.
     """
-    rows = [[{"text": label, "url": url}] for label, url in links if url.startswith("https://")]
+    rows: list[list[dict]] = [
+        [{"text": label, "callback_data": data} for label, data in row]
+        for row in (actions or [])
+        if row
+    ]
+    rows += [[{"text": label, "url": url}] for label, url in links if url.startswith("https://")]
     return {"inline_keyboard": rows} if rows else None
 
 
@@ -73,6 +80,7 @@ def send_message(
     text: str,
     *,
     links: list[Link] | None = None,
+    actions: list[list[Action]] | None = None,
     parse_mode: str = "HTML",
 ) -> dict | None:
     """Send a message, logging (not raising) on failure.
@@ -88,7 +96,7 @@ def send_message(
         "parse_mode": parse_mode,
         "disable_web_page_preview": True,
     }
-    keyboard = _keyboard(links)
+    keyboard = _keyboard(links, actions)
     if keyboard:
         payload["reply_markup"] = keyboard
     try:
@@ -100,6 +108,52 @@ def send_message(
     return None
 
 
+def edit_message(
+    chat_id: str | int,
+    message_id: int,
+    text: str,
+    *,
+    links: list[Link] | None = None,
+    actions: list[list[Action]] | None = None,
+    parse_mode: str = "HTML",
+) -> None:
+    """Replace a sent message's text and buttons (best-effort, never raises).
+
+    Passing no actions/links removes the keyboard (an empty one is sent
+    explicitly - omitting reply_markup would leave the old buttons in place).
+    """
+    links = links or []
+    payload: dict[str, Any] = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": _with_text_links(text, links),
+        "parse_mode": parse_mode,
+        "disable_web_page_preview": True,
+        "reply_markup": _keyboard(links, actions) or {"inline_keyboard": []},
+    }
+    try:
+        _call("editMessageText", payload)
+    except TelegramNotConfigured:
+        logger.warning("Telegram message not edited (bot not configured)")
+    except Exception as exc:  # noqa: BLE001
+        # Telegram answers 400 "message is not modified" when nothing changed.
+        if "not modified" not in str(exc):
+            logger.exception("Failed to edit Telegram message %s/%s", chat_id, message_id)
+
+
+def answer_callback_query(callback_query_id: str, text: str = "", *, alert: bool = False) -> None:
+    """Acknowledge a button tap (stops the spinner; optional toast/alert)."""
+    try:
+        _call(
+            "answerCallbackQuery",
+            {"callback_query_id": callback_query_id, "text": text, "show_alert": alert},
+        )
+    except TelegramNotConfigured:
+        logger.warning("Telegram callback not answered (bot not configured)")
+    except Exception:  # noqa: BLE001
+        logger.exception("Failed to answer callback query")
+
+
 # -- webhook management (used by the set/delete/info management commands) ------
 def set_webhook(url: str, *, secret_token: str, drop_pending_updates: bool = False) -> bool:
     return _call(
@@ -107,7 +161,7 @@ def set_webhook(url: str, *, secret_token: str, drop_pending_updates: bool = Fal
         {
             "url": url,
             "secret_token": secret_token,
-            "allowed_updates": ["message"],
+            "allowed_updates": ["message", "callback_query"],
             "drop_pending_updates": drop_pending_updates,
         },
     )

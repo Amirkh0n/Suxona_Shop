@@ -128,3 +128,62 @@ def product_rejected(product_name: str, note: str) -> str:
         text += f"\n\n<b>Sabab:</b> {esc(note)}"
     text += "\n\nMa'lumotlarni to'g'rilab, qayta yuborishingiz mumkin."
     return text
+
+
+# -- seller order card (edited in place as the order progresses) ---------------
+ORDER_CARD_STATUS = {
+    "PENDING": "🆕 Yangi",
+    "ACCEPTED": "✅ Qabul qilindi",
+    "DELIVERING": "🚚 Yetkazilmoqda",
+    "COMPLETED": "🎉 Yakunlandi",
+    "REJECTED": "❌ Rad etildi",
+    "CANCELLED": "🚫 Bekor qilindi",
+}
+
+
+def seller_order_card(
+    *,
+    order_id: int,
+    status: str,
+    customer: str,
+    phone: str,
+    address: str,
+    items: list[str],
+    delivery: str,
+    note: str,
+    total: str,
+) -> str:
+    title = "🛒 <b>Yangi buyurtma!</b>" if status == "PENDING" else "🛒 <b>Buyurtma</b>"
+    lines = [
+        f"{title} #{order_id}",
+        "",
+        f"Mijoz: {esc(customer)}",
+        f"Telefon: {esc(phone)}",
+        f"Manzil: {esc(address)}",
+        "",
+        "<b>Mahsulotlar:</b>",
+        *[f"• {esc(i)}" for i in items],
+        "",
+        f"Yetkazib berish: {esc(delivery)}",
+    ]
+    if note:
+        lines.append(f"Izoh: {esc(note)}")
+    lines += ["", f"<b>Jami: {esc(total)} so'm</b>", f"Holat: {ORDER_CARD_STATUS.get(status, status)}"]
+    return "\n".join(lines)
+
+
+# -- button feedback (toast shown to the seller) -------------------------------
+def callback_done() -> str:
+    return "Bajarildi ✅"
+
+
+def callback_stale() -> str:
+    return "Buyurtma holati allaqachon o'zgargan."
+
+
+def callback_failed() -> str:
+    return "Xatolik yuz berdi. Keyinroq urinib ko'ring."
+
+
+def callback_forbidden() -> str:
+    return "Bu buyurtma sizga tegishli emas yoki Telegram akkauntingiz ulanmagan."

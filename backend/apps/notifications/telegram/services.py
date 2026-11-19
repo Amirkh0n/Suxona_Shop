@@ -103,20 +103,67 @@ def _customer_name(user: User) -> str:
     return f"{user.first_name} {user.last_name}".strip() or user.phone
 
 
+def _money(value) -> str:
+    return f"{value:,.0f}".replace(",", " ")
+
+
+# Buttons offered to the seller for each status; (label, action). The action
+# names are what bot.handle_update maps back to the order services.
+SELLER_ACTIONS: dict[str, list[list[tuple[str, str]]]] = {
+    "PENDING": [[("✅ Qabul qilish", "accept"), ("❌ Rad etish", "reject")]],
+    "ACCEPTED": [[("🚚 Yetkazishga chiqarish", "deliver")], [("🚫 Bekor qilish", "cancel")]],
+    "DELIVERING": [[("🎉 Yakunlash", "complete")]],
+}
+
+
+def seller_order_view(order) -> tuple[str, list[list[client.Action]], list[client.Link]]:
+    """Text + buttons for the seller's order message, for the order's *current* status.
+
+    Used for the first message and to re-render it after every button tap, so
+    the chat always shows the real state (and stale buttons disappear).
+    """
+    items = [
+        f"{i.product.name}"
+        f"{' (' + _variant_text(i.variant) + ')' if i.variant else ''}"
+        f" × {i.quantity} — {_money(i.subtotal)}"
+        for i in order.items.select_related("product", "variant")
+    ]
+    address = order.address
+    text = templates.seller_order_card(
+        order_id=order.pk,
+        status=order.status,
+        customer=_customer_name(order.customer),
+        phone=order.customer.phone,
+        address=f"{address.village.name}, {address.street}, {address.house}",
+        items=items,
+        delivery=f"{_money(order.delivery_price)} so'm",
+        note=order.note,
+        total=_money(order.total),
+    )
+    actions = [
+        [(label, f"order:{action}:{order.pk}") for label, action in row]
+        for row in SELLER_ACTIONS.get(order.status, [])
+    ]
+    links = [("Buyurtmani ochish", _app(f"/buyurtma/{order.pk}"))]
+    return text, actions, links
+
+
+def _variant_text(variant) -> str:
+    attrs = " · ".join(f"{k}: {v}" for k, v in (variant.attributes or {}).items() if v)
+    return attrs or variant.sku
+
+
 def notify_seller_new_order(*, order_id: int) -> None:
     from apps.orders.models import Order
 
-    order = Order.objects.select_related("store__owner", "customer").get(pk=order_id)
-    _notify_user(
-        order.store.owner,
-        templates.new_order_for_seller(
-            order.pk,
-            _customer_name(order.customer),
-            f"{order.total:,.0f}".replace(",", " "),
-            order.items.count(),
-        ),
-        [("Buyurtmalarni ochish", _app("/sotuvchi/buyurtmalar"))],
-    )
+    order = Order.objects.select_related(
+        "store__owner", "customer", "address__village"
+    ).get(pk=order_id)
+    chat_id = _chat_id_for(order.store.owner)
+    if chat_id is None:
+        return
+    text, actions, links = seller_order_view(order)
+    client.send_message(chat_id, text, links=links, actions=actions)
 
 
 def notify_customer_order_status(*, order_id: int) -> None:
