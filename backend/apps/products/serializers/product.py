@@ -28,6 +28,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "store_id",
             "category_id",
             "primary_image",
+            "rating_avg",
+            "rating_count",
         ]
         read_only_fields = fields
 
@@ -64,6 +66,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "discount_percent",
             "stock",
             "status",
+            "rating_avg",
+            "rating_count",
             "images",
             "variants",
             "moderation_note",

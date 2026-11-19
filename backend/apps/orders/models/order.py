@@ -33,6 +33,14 @@ class Order(BaseModel):
     # Who to call for this order; defaults to the customer's own details.
     contact_name = models.CharField(max_length=255, blank=True)
     contact_phone = models.CharField(max_length=20, blank=True)
+    promo_code = models.ForeignKey(
+        "orders.PromoCode",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     delivery_price = models.DecimalField(max_digits=12, decimal_places=2)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     total = models.DecimalField(max_digits=12, decimal_places=2)

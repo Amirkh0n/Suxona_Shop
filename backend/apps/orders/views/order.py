@@ -103,6 +103,7 @@ class OrderCreateView(APIView):
                 address=address,
                 note=data.get("note", ""),
                 delivery_method=data["delivery_method"],
+                promo_code=data.get("promo_code", ""),
                 contact_name=contact_name,
                 contact_phone=contact_phone,
             )

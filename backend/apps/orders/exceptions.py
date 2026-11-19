@@ -87,3 +87,7 @@ class PickupNotAvailableError(OrderServiceError):
 
 class MinimumOrderNotReachedError(OrderServiceError):
     default_message = "The order total is below the store's minimum order amount."
+
+
+class InvalidPromoCodeError(OrderServiceError):
+    default_message = "Promo code is not valid."

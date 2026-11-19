@@ -15,6 +15,7 @@ from django.conf import settings
 from django.db import transaction
 
 from apps.accounts.models import TelegramAccount, User
+from apps.notifications.inapp import create_notification
 from apps.notifications.telegram import client, templates
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,9 @@ def verification_links() -> list[client.Link]:
 
 # -- store applications --------------------------------------------------------
 def notify_store_application_approved(*, owner: User, store_name: str) -> None:
+    create_notification(
+        owner, kind="store", title=f"“{store_name}” do'koni tasdiqlandi 🎉", link="/sotuvchi"
+    )
     _notify_user(
         owner,
         templates.store_application_approved(store_name),
@@ -73,6 +77,10 @@ def notify_store_application_approved(*, owner: User, store_name: str) -> None:
 def notify_store_application_rejected(
     *, owner: User, store_name: str, admin_note: str = ""
 ) -> None:
+    create_notification(
+        owner, kind="store", title=f"“{store_name}” arizasi rad etildi",
+        body=admin_note, link="/dokon-ochish",
+    )
     _notify_user(
         owner,
         templates.store_application_rejected(store_name, admin_note),
@@ -165,6 +173,10 @@ def notify_seller_new_order(*, order_id: int) -> None:
     order = Order.objects.select_related(
         "store__owner", "customer", "address__village"
     ).get(pk=order_id)
+    create_notification(
+        order.store.owner, kind="order", title=f"Yangi buyurtma #{order.pk}",
+        body=f"Jami: {_money(order.total)} so'm", link=f"/buyurtma/{order.pk}",
+    )
     chat_id = _chat_id_for(order.store.owner)
     if chat_id is None:
         return
@@ -176,6 +188,15 @@ def notify_customer_order_status(*, order_id: int) -> None:
     from apps.orders.models import Order
 
     order = Order.objects.select_related("store", "customer").get(pk=order_id)
+    create_notification(
+        order.customer, kind="order",
+        title=(
+            f"Buyurtma #{order.pk}: "
+            f"{templates.ORDER_CARD_STATUS.get(order.status, order.status)}"
+        ),
+        body=order.note if order.status == "REJECTED" else order.store.name,
+        link=f"/buyurtma/{order.pk}",
+    )
     _notify_user(
         order.customer,
         templates.order_status_for_customer(
@@ -189,6 +210,10 @@ def notify_seller_order_cancelled(*, order_id: int) -> None:
     from apps.orders.models import Order
 
     order = Order.objects.select_related("store__owner", "customer").get(pk=order_id)
+    create_notification(
+        order.store.owner, kind="order", title=f"Buyurtma #{order.pk} bekor qilindi",
+        body=_customer_name(order.customer), link=f"/buyurtma/{order.pk}",
+    )
     _notify_user(
         order.store.owner,
         templates.order_cancelled_for_seller(order.pk, _customer_name(order.customer)),
@@ -220,6 +245,15 @@ def notify_seller_product_moderated(*, product_id: int) -> None:
         text = templates.product_approved(product.name)
     else:
         text = templates.product_rejected(product.name, product.moderation_note)
+    create_notification(
+        product.store.owner, kind="product",
+        title=(
+            f"“{product.name}” tasdiqlandi"
+            if product.status == ProductStatus.ACTIVE
+            else f"“{product.name}” rad etildi"
+        ),
+        body=product.moderation_note, link=f"/sotuvchi/mahsulotlar/{product.pk}",
+    )
     _notify_user(
         product.store.owner,
         text,

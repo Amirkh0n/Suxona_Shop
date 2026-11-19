@@ -1,6 +1,6 @@
 from django.db.models import F
 
-from apps.orders.models import Order
+from apps.orders.models import Order, PromoCode
 from apps.products.models import Product, ProductVariant
 
 
@@ -15,6 +15,10 @@ def restock_order_items(order: Order) -> None:
     means "unlimited" and is left alone. Uses F() so concurrent orders can't
     clobber each other. Call inside the caller's transaction.
     """
+    if order.promo_code_id:
+        PromoCode.objects.filter(pk=order.promo_code_id, used_count__gt=0).update(
+            used_count=F("used_count") - 1
+        )
     for item in order.items.select_related("product", "variant"):
         if item.variant_id is not None and item.variant.stock is not None:
             ProductVariant.objects.filter(pk=item.variant_id).update(

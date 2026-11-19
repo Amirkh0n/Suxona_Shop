@@ -1,4 +1,3 @@
-from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -48,29 +47,39 @@ class ProductListCreateView(PaginatedAPIView):
             OpenApiParameter("search", str, description="Search by name/description."),
             OpenApiParameter("category", int, description="Filter by category id."),
             OpenApiParameter("store", int, description="Filter by store id."),
+            OpenApiParameter("categories", str, description="Comma-separated category ids."),
             OpenApiParameter(
                 "on_sale", bool, description="Only discounted products (old_price > price)."
+            ),
+            OpenApiParameter("in_stock", bool, description="Hide sold-out products."),
+            OpenApiParameter("min_price", float),
+            OpenApiParameter("max_price", float),
+            OpenApiParameter(
+                "ordering",
+                str,
+                enum=["new", "price_asc", "price_desc", "popular", "discount", "rating"],
             ),
         ],
         responses={200: ProductListSerializer(many=True)},
     )
     def get(self, request: Request) -> Response:
-        category = request.query_params.get("category")
-        store = request.query_params.get("store")
-        search = request.query_params.get("search")
+        q = request.query_params
+        category_ids = []
+        for raw in (q.get("categories", ""), q.get("category", "")):
+            category_ids += [int(v) for v in raw.split(",") if v.strip().isdigit()]
+        flag = lambda name: q.get(name, "").lower() in ("1", "true")  # noqa: E731
 
-        if search:
-            products = ProductSelector.search_products(search)
-        elif category:
-            products = ProductSelector.get_products_by_category(category)
-        elif store:
-            # Public endpoint: never expose drafts/pending/rejected products.
-            products = ProductSelector.get_public_store_products(store)
-        else:
-            products = ProductSelector.get_active_products()
-
-        if request.query_params.get("on_sale", "").lower() in ("1", "true"):
-            products = products.filter(old_price__isnull=False, old_price__gt=F("price"))
+        # Public endpoint: only ACTIVE products, whatever the filters.
+        products = ProductSelector.filter_public_products(
+            search=q.get("search", "").strip(),
+            category_ids=category_ids,
+            store_id=q.get("store") if q.get("store", "").isdigit() else None,
+            on_sale=flag("on_sale"),
+            in_stock=flag("in_stock"),
+            min_price=q.get("min_price"),
+            max_price=q.get("max_price"),
+            ordering=q.get("ordering", "new"),
+        )
 
         return self.paginate(products, ProductListSerializer, request)
 
@@ -230,6 +239,22 @@ class ProductDetailView(APIView):
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Products"])
+class SimilarProductsView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Similar products (same category)",
+        responses={200: ProductListSerializer(many=True)},
+    )
+    def get(self, request: Request, product_id: int) -> Response:
+        product = ProductSelector.get_active_product(product_id)
+        if product is None:
+            return Response({"detail": "Product not found."}, status=status.HTTP_404_NOT_FOUND)
+        similar = ProductSelector.get_similar_products(product)
+        return Response(ProductListSerializer(similar, many=True).data)
 
 
 @extend_schema(tags=["Products"])

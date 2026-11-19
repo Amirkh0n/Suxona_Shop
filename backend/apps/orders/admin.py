@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.db.models import Count
 
 from apps.common.admin import ORDER_STATUS_COLORS, render_status_badge
-from apps.orders.models import Cart, CartItem, Order, OrderItem
+from apps.orders.models import Cart, CartItem, Order, OrderItem, PromoCode
 
 
 class OrderItemInline(admin.TabularInline):
@@ -160,3 +160,14 @@ class CartAdmin(admin.ModelAdmin):
     @admin.display(description="Items", ordering="_item_count")
     def item_count(self, obj: Cart) -> int:
         return getattr(obj, "_item_count", obj.items.count())
+
+
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = (
+        "code", "kind", "value", "store", "used_count", "max_uses", "is_active", "valid_until",
+    )
+    list_filter = ("kind", "is_active")
+    search_fields = ("code",)
+    raw_id_fields = ("store",)
+    readonly_fields = ("used_count", "created_at", "updated_at")

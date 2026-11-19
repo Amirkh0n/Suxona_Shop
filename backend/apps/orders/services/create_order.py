@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import F
 
 from apps.accounts.models import Address, User
 from apps.common.enums import DeliveryMethod, OrderStatus, ProductStatus, StoreStatus
@@ -19,7 +20,8 @@ from apps.orders.exceptions import (
     ProductVariantNotPurchasable,
     StoreNotActiveError,
 )
-from apps.orders.models import Cart, CartItem, Order, OrderItem
+from apps.orders.models import Cart, CartItem, Order, OrderItem, PromoCode
+from apps.orders.services.promo import validate_promo
 from apps.products.models import Product, ProductVariant
 from apps.stores.models import DeliveryZone, Store
 
@@ -36,6 +38,7 @@ class CreateOrderService:
         delivery_method: str = DeliveryMethod.DELIVERY,
         contact_name: str = "",
         contact_phone: str = "",
+        promo_code: str = "",
     ) -> Order:
         pickup = delivery_method == DeliveryMethod.PICKUP
         if pickup:
@@ -131,8 +134,16 @@ class CreateOrderService:
                 .replace(",", " ")
             )
 
+        promo = None
+        discount = Decimal("0")
+        if promo_code:
+            promo, discount = validate_promo(
+                code=promo_code, store=store, customer=customer, subtotal=subtotal, lock=True
+            )
+            PromoCode.objects.filter(pk=promo.pk).update(used_count=F("used_count") + 1)
+
         delivery_price = delivery_zone.delivery_price if delivery_zone else Decimal("0")
-        total = subtotal + delivery_price
+        total = subtotal - discount + delivery_price
 
         order = Order.objects.create(
             customer=customer,
@@ -142,6 +153,8 @@ class CreateOrderService:
             contact_name=contact_name,
             contact_phone=contact_phone,
             delivery_price=delivery_price,
+            promo_code=promo,
+            discount_amount=discount,
             subtotal=subtotal,
             total=total,
             status=OrderStatus.PENDING,

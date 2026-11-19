@@ -4,6 +4,7 @@ from .product import (
     MyProductsView,
     ProductDetailView,
     ProductListCreateView,
+    SimilarProductsView,
 )
 from .product_image import (
     ProductImageDeleteView,
@@ -11,14 +12,17 @@ from .product_image import (
     ProductImageReorderView,
 )
 from .product_variant import ProductVariantDetailView, ProductVariantListCreateView
+from .review import ProductReviewListCreateView
 
 __all__ = [
+    "ProductReviewListCreateView",
     "FavoriteIdsView",
     "FavoriteListView",
     "FavoriteToggleView",
     "CategoryDetailView",
     "CategoryListCreateView",
     "MyProductsView",
+    "SimilarProductsView",
     "ProductDetailView",
     "ProductListCreateView",
     "ProductImageDeleteView",

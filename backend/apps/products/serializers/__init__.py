@@ -20,8 +20,11 @@ from .product_variant import (
     ProductVariantSerializer,
     ProductVariantUpdateSerializer,
 )
+from .review import ProductReviewCreateSerializer, ProductReviewSerializer
 
 __all__ = [
+    "ProductReviewCreateSerializer",
+    "ProductReviewSerializer",
     "CategoryCreateSerializer",
     "CategorySerializer",
     "CategoryTreeSerializer",

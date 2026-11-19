@@ -29,6 +29,9 @@ class Product(BaseModel):
     # Price before the discount. When set (and > price) the product is "on
     # sale" and clients show the strike-through price and discount_percent.
     old_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    # Aggregate of visible ProductReview rows (kept by the review services).
+    rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    rating_count = models.PositiveIntegerField(default=0)
     # --- moderation -------------------------------------------------------
     # approved_at is set the first time an admin approves the product and is
     # never cleared: it is what lets the seller hide/show an already-approved

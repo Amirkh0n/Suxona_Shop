@@ -12,7 +12,15 @@ from apps.common.admin import (
     render_thumbnail,
 )
 from apps.common.enums import ProductStatus
-from apps.products.models import Category, Product, ProductImage, ProductVariant
+from apps.products.models import (
+    Category,
+    Favorite,
+    Product,
+    ProductImage,
+    ProductReview,
+    ProductVariant,
+)
+from apps.products.services import refresh_product_rating
 
 
 @admin.register(Category)
@@ -105,7 +113,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {"fields": ("store", "category", "name", "description")}),
-        ("Pricing & stock", {"fields": ("price", "stock", "status")}),
+        ("Pricing & stock", {"fields": ("price", "old_price", "stock", "status")}),
         (
             "Moderation",
             {"fields": ("moderation_note", "approved_at", "reviewed_by", "reviewed_at")},
@@ -190,3 +198,38 @@ class ProductAdmin(admin.ModelAdmin):
     def archive_products(self, request, queryset):
         updated = queryset.update(status=ProductStatus.HIDDEN)
         self.message_user(request, f"{updated} product(s) archived.")
+
+
+@admin.register(ProductReview)
+class ProductReviewAdmin(admin.ModelAdmin):
+    list_display = ("product", "customer", "rating", "is_hidden", "created_at")
+    list_filter = ("is_hidden", "rating")
+    search_fields = ("product__name", "comment", "customer__phone")
+    raw_id_fields = ("product", "customer")
+    readonly_fields = ("created_at", "updated_at")
+    actions = ["hide_reviews", "show_reviews"]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        refresh_product_rating(obj.product_id)
+
+    def _toggle(self, request, queryset, hidden: bool):
+        product_ids = set(queryset.values_list("product_id", flat=True))
+        queryset.update(is_hidden=hidden)
+        for pid in product_ids:
+            refresh_product_rating(pid)
+        self.message_user(request, f"{len(product_ids)} ta mahsulot reytingi yangilandi.")
+
+    @admin.action(description="Tanlangan sharhlarni yashirish")
+    def hide_reviews(self, request, queryset):
+        self._toggle(request, queryset, True)
+
+    @admin.action(description="Tanlangan sharhlarni ko'rsatish")
+    def show_reviews(self, request, queryset):
+        self._toggle(request, queryset, False)
+
+
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ("user", "product", "created_at")
+    raw_id_fields = ("user", "product")

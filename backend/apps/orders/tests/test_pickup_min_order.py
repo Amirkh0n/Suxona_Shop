@@ -63,3 +63,49 @@ def test_minimum_order_amount_enforced(cart):
     store.save()
     r = client.post(URL, {"store_id": store.pk, "delivery_method": "PICKUP"}, format="json")
     assert r.status_code == 201
+
+
+def test_promo_code_discounts_and_is_single_use(cart):
+    from apps.orders.models import PromoCode
+
+    client, store = cart
+    store.allows_pickup = True
+    store.save()
+    promo = PromoCode.objects.create(code="  welcome10 ", kind="PERCENT", value=10, max_uses=5)
+    assert promo.code == "WELCOME10"
+
+    check = client.post(
+        "/api/v1/promo/check", {"store_id": store.pk, "code": "welcome10"}, format="json"
+    )
+    assert check.status_code == 200
+    assert float(check.data["discount"]) == 2.0  # 10% of 20
+
+    r = client.post(
+        URL,
+        {"store_id": store.pk, "delivery_method": "PICKUP", "promo_code": "welcome10"},
+        format="json",
+    )
+    assert r.status_code == 201, r.data
+    order = Order.objects.get()
+    assert float(order.discount_amount) == 2.0
+    assert float(order.total) == 18.0
+    promo.refresh_from_db()
+    assert promo.used_count == 1
+
+    # Cancelling gives the use back.
+    client.post(f"/api/v1/orders/{order.pk}/cancel")
+    promo.refresh_from_db()
+    assert promo.used_count == 0
+
+
+def test_invalid_promo_is_400_and_creates_nothing(cart):
+    client, store = cart
+    store.allows_pickup = True
+    store.save()
+    r = client.post(
+        URL,
+        {"store_id": store.pk, "delivery_method": "PICKUP", "promo_code": "NOPE"},
+        format="json",
+    )
+    assert r.status_code == 400
+    assert not Order.objects.exists()

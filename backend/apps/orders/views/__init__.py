@@ -5,6 +5,7 @@ from .order import (
     OrderCreateView,
     OrderDetailView,
 )
+from .promo import PromoCheckView
 from .seller_order import (
     AcceptOrderView,
     CompleteOrderView,
@@ -14,6 +15,7 @@ from .seller_order import (
 )
 
 __all__ = [
+    "PromoCheckView",
     "CartItemCreateView",
     "CartItemDetailView",
     "CartView",

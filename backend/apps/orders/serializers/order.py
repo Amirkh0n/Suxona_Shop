@@ -38,6 +38,10 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         review = getattr(obj, "review", None)
         return StoreReviewSerializer(review).data if review else None
     items = OrderItemSerializer(many=True, read_only=True)
+    promo_code_text = serializers.SerializerMethodField()
+
+    def get_promo_code_text(self, obj) -> str:
+        return obj.promo_code.code if obj.promo_code_id else ""
 
     class Meta:
         model = Order
@@ -50,6 +54,8 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "contact_name",
             "contact_phone",
             "delivery_price",
+            "discount_amount",
+            "promo_code_text",
             "subtotal",
             "total",
             "status",
@@ -71,6 +77,7 @@ class OrderCreateSerializer(serializers.Serializer):
     )
     contact_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
     contact_phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    promo_code = serializers.CharField(required=False, allow_blank=True, max_length=40)
     note = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):

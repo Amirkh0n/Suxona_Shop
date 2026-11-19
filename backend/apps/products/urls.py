@@ -12,8 +12,10 @@ from apps.products.views import (
     ProductImageListUploadView,
     ProductImageReorderView,
     ProductListCreateView,
+    ProductReviewListCreateView,
     ProductVariantDetailView,
     ProductVariantListCreateView,
+    SimilarProductsView,
 )
 
 app_name = "products"
@@ -34,6 +36,16 @@ urlpatterns = [
         "products/<int:product_id>",
         ProductDetailView.as_view(),
         name="product-detail",
+    ),
+    path(
+        "products/<int:product_id>/similar",
+        SimilarProductsView.as_view(),
+        name="product-similar",
+    ),
+    path(
+        "products/<int:product_id>/reviews",
+        ProductReviewListCreateView.as_view(),
+        name="product-reviews",
     ),
     # Product images
     path(

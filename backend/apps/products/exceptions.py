@@ -104,3 +104,11 @@ class ProductNotPendingReviewError(ProductServiceError):
 
 class InvalidDiscountError(ProductServiceError):
     default_message = "old_price must be greater than price."
+
+
+class ProductReviewNotAllowedError(ProductServiceError):
+    default_message = "Only customers with a completed order of this product can review it."
+
+
+class ProductReviewAlreadyExistsError(ProductServiceError):
+    default_message = "You have already reviewed this product."

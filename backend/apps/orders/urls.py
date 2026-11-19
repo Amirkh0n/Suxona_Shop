@@ -11,6 +11,7 @@ from apps.orders.views import (
     MyOrdersView,
     OrderCreateView,
     OrderDetailView,
+    PromoCheckView,
     RejectOrderView,
     SellerOrderListView,
 )
@@ -26,6 +27,7 @@ urlpatterns = [
         CartItemDetailView.as_view(),
         name="cart-item-detail",
     ),
+    path("promo/check", PromoCheckView.as_view(), name="promo-check"),
     # Orders (customer)
     path("orders", OrderCreateView.as_view(), name="order-create"),
     path("orders/my", MyOrdersView.as_view(), name="order-my"),
