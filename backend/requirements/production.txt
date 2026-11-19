@@ -1,1 +1,3 @@
 -r base.txt
+sentry-sdk[django]>=2.0
+redis>=5.0

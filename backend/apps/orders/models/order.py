@@ -33,6 +33,10 @@ class Order(BaseModel):
     # Who to call for this order; defaults to the customer's own details.
     contact_name = models.CharField(max_length=255, blank=True)
     contact_phone = models.CharField(max_length=20, blank=True)
+    # Customer's preferred time window (free text, e.g. "18:00-20:00").
+    delivery_slot = models.CharField(max_length=50, blank=True)
+    courier_name = models.CharField(max_length=255, blank=True)
+    courier_phone = models.CharField(max_length=20, blank=True)
     promo_code = models.ForeignKey(
         "orders.PromoCode",
         on_delete=models.SET_NULL,

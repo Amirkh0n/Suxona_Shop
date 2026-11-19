@@ -39,6 +39,7 @@ class CreateOrderService:
         contact_name: str = "",
         contact_phone: str = "",
         promo_code: str = "",
+        delivery_slot: str = "",
     ) -> Order:
         pickup = delivery_method == DeliveryMethod.PICKUP
         if pickup:
@@ -154,6 +155,7 @@ class CreateOrderService:
             contact_phone=contact_phone,
             delivery_price=delivery_price,
             promo_code=promo,
+            delivery_slot=delivery_slot,
             discount_amount=discount,
             subtotal=subtotal,
             total=total,

@@ -13,7 +13,10 @@ from apps.orders.views import (
     OrderDetailView,
     PromoCheckView,
     RejectOrderView,
+    ReturnRequestCreateView,
+    ReturnRequestDecideView,
     SellerOrderListView,
+    SellerStatsView,
 )
 
 app_name = "orders"
@@ -26,6 +29,13 @@ urlpatterns = [
         "cart/items/<int:item_id>",
         CartItemDetailView.as_view(),
         name="cart-item-detail",
+    ),
+    path("orders/store/stats", SellerStatsView.as_view(), name="seller-stats"),
+    path("orders/<int:order_id>/return", ReturnRequestCreateView.as_view(), name="order-return"),
+    path(
+        "orders/<int:order_id>/return/decide",
+        ReturnRequestDecideView.as_view(),
+        name="order-return-decide",
     ),
     path("promo/check", PromoCheckView.as_view(), name="promo-check"),
     # Orders (customer)

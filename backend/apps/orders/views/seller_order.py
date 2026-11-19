@@ -10,6 +10,7 @@ from apps.common.schema import DetailSerializer
 from apps.orders.exceptions import InvalidOrderStatusError, OrderNotFound
 from apps.orders.selectors import OrderSelector
 from apps.orders.serializers import (
+    OrderDeliveringSerializer,
     OrderDetailSerializer,
     OrderListSerializer,
     OrderRejectSerializer,
@@ -123,12 +124,17 @@ class AcceptOrderView(_SellerOrderActionView):
 
 @extend_schema(
     tags=["Orders"],
-    summary="Mark an order as delivering (seller)",
-    request=None,
+    summary="Mark an order as delivering (seller); optionally record the courier",
+    request=OrderDeliveringSerializer,
     responses=_ACTION_RESPONSES,
 )
 class MarkDeliveringOrderView(_SellerOrderActionView):
     service = MarkDeliveringService
+
+    def _service_kwargs(self, request: Request) -> dict:
+        serializer = OrderDeliveringSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return dict(serializer.validated_data)
 
 
 @extend_schema(

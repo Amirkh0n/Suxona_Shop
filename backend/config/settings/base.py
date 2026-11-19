@@ -256,3 +256,29 @@ LOGGING = {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+# --- Cache (optional Redis) ---------------------------------------------------
+# Set REDIS_URL (e.g. redis://redis:6379/1) to share the cache between workers;
+# without it each process uses its own in-memory cache, which is fine for one box.
+if os.environ.get("REDIS_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.environ["REDIS_URL"],
+        }
+    }
+
+# --- Error tracking (optional Sentry) ----------------------------------------
+# Enabled only when SENTRY_DSN is set and sentry-sdk is installed.
+if os.environ.get("SENTRY_DSN"):
+    try:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=os.environ["SENTRY_DSN"],
+            environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+            traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0")),
+            send_default_pii=False,
+        )
+    except ImportError:
+        pass

@@ -109,3 +109,84 @@ def test_invalid_promo_is_400_and_creates_nothing(cart):
     )
     assert r.status_code == 400
     assert not Order.objects.exists()
+
+
+def _completed_order(user, store, product, **kw):
+    from apps.orders.models import OrderItem
+
+    order = Order.objects.create(
+        customer=user, store=store, delivery_method="PICKUP", status="COMPLETED",
+        subtotal=20, delivery_price=0, total=20, **kw,
+    )
+    OrderItem.objects.create(order=order, product=product, price=10, quantity=2, subtotal=20)
+    return order
+
+
+def test_return_request_flow(user, shop):
+    store, product = shop
+    order = _completed_order(user, store, product)
+    buyer, seller = APIClient(), APIClient()
+    buyer.force_authenticate(user)
+    seller.force_authenticate(store.owner)
+
+    url = f"/api/v1/orders/{order.pk}/return"
+    assert buyer.post(url, {"reason": "Buzilgan"}, format="json").status_code == 201
+    assert buyer.post(url, {"reason": "again"}, format="json").status_code == 409
+    assert buyer.get(f"/api/v1/orders/{order.pk}").data["return_request"]["status"] == "PENDING"
+
+    decide = seller.post(f"{url}/decide", {"approve": True, "note": "Ok"}, format="json")
+    assert decide.status_code == 200 and decide.data["status"] == "APPROVED"
+    assert seller.post(f"{url}/decide", {"approve": False}, format="json").status_code == 409
+
+
+def test_return_only_for_recent_completed_own_orders(user, staff, shop):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    store, product = shop
+    order = _completed_order(user, store, product)
+    stranger = APIClient()
+    stranger.force_authenticate(staff)
+    assert stranger.post(
+        f"/api/v1/orders/{order.pk}/return", {"reason": "x"}, format="json"
+    ).status_code == 404
+
+    Order.objects.filter(pk=order.pk).update(updated_at=timezone.now() - timedelta(days=8))
+    buyer = APIClient()
+    buyer.force_authenticate(user)
+    assert buyer.post(
+        f"/api/v1/orders/{order.pk}/return", {"reason": "late"}, format="json"
+    ).status_code == 400
+
+
+def test_courier_is_recorded_when_delivering(user, shop):
+    store, product = shop
+    order = _completed_order(user, store, product)
+    Order.objects.filter(pk=order.pk).update(status="ACCEPTED")
+    seller = APIClient()
+    seller.force_authenticate(store.owner)
+    r = seller.post(
+        f"/api/v1/orders/{order.pk}/delivering",
+        {"courier_name": "Vali", "courier_phone": "+998901234567"},
+        format="json",
+    )
+    assert r.status_code == 200, r.data
+    assert r.data["courier_name"] == "Vali"
+
+
+def test_seller_stats(user, shop):
+    store, product = shop
+    _completed_order(user, store, product)
+    seller = APIClient()
+    seller.force_authenticate(store.owner)
+    r = seller.get("/api/v1/orders/store/stats?days=7")
+    assert r.status_code == 200
+    assert r.data["orders_completed"] == 1
+    assert float(r.data["revenue"]) == 20.0
+    assert len(r.data["daily"]) == 7
+    assert r.data["top_products"][0]["quantity"] == 2
+    # customers cannot read it
+    buyer = APIClient()
+    buyer.force_authenticate(user)
+    assert buyer.get("/api/v1/orders/store/stats").status_code in (403, 404)

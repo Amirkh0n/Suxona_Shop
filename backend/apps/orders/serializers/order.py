@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.accounts.serializers.address import AddressDetailSerializer
 from apps.accounts.serializers.user import UserCompactSerializer
 from apps.common.enums import DeliveryMethod
-from apps.orders.models import Order
+from apps.orders.models import Order, ReturnRequest
 from apps.orders.serializers.order_item import OrderItemSerializer
 from apps.stores.serializers.store import StoreListSerializer, StoreReviewSerializer
 
@@ -27,6 +27,22 @@ class OrderListSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ReturnRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReturnRequest
+        fields = ["id", "reason", "status", "seller_note", "created_at"]
+        read_only_fields = fields
+
+
+class ReturnCreateSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=1000)
+
+
+class ReturnDecideSerializer(serializers.Serializer):
+    approve = serializers.BooleanField()
+    note = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+
 class OrderDetailSerializer(serializers.ModelSerializer):
     customer = UserCompactSerializer(read_only=True)
     store = StoreListSerializer(read_only=True)
@@ -39,6 +55,12 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         return StoreReviewSerializer(review).data if review else None
     items = OrderItemSerializer(many=True, read_only=True)
     promo_code_text = serializers.SerializerMethodField()
+    return_request = serializers.SerializerMethodField()
+
+    @extend_schema_field(ReturnRequestSerializer(allow_null=True))
+    def get_return_request(self, obj):
+        rr = getattr(obj, "return_request", None)
+        return ReturnRequestSerializer(rr).data if rr else None
 
     def get_promo_code_text(self, obj) -> str:
         return obj.promo_code.code if obj.promo_code_id else ""
@@ -53,6 +75,9 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "delivery_method",
             "contact_name",
             "contact_phone",
+            "delivery_slot",
+            "courier_name",
+            "courier_phone",
             "delivery_price",
             "discount_amount",
             "promo_code_text",
@@ -62,6 +87,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "note",
             "items",
             "review",
+            "return_request",
             "created_at",
             "updated_at",
         ]
@@ -78,12 +104,18 @@ class OrderCreateSerializer(serializers.Serializer):
     contact_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
     contact_phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
     promo_code = serializers.CharField(required=False, allow_blank=True, max_length=40)
+    delivery_slot = serializers.CharField(required=False, allow_blank=True, max_length=50)
     note = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
         if attrs["delivery_method"] == DeliveryMethod.DELIVERY and not attrs.get("address_id"):
             raise serializers.ValidationError({"address_id": "Required for delivery orders."})
         return attrs
+
+
+class OrderDeliveringSerializer(serializers.Serializer):
+    courier_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    courier_phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
 
 
 class OrderRejectSerializer(serializers.Serializer):

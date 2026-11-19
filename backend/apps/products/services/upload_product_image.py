@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import Max
 
 from apps.accounts.models import User
+from apps.common.images import optimize_image
 from apps.products.exceptions import (
     MaxImagesError,
     NotProductOwnerError,
@@ -72,7 +73,7 @@ class UploadProductImageService:
 
         return ProductImage.objects.create(
             product=locked,
-            image=image,
+            image=optimize_image(image),
             is_primary=make_primary,
             sort_order=sort_order,
         )

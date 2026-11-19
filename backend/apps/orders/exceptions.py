@@ -91,3 +91,11 @@ class MinimumOrderNotReachedError(OrderServiceError):
 
 class InvalidPromoCodeError(OrderServiceError):
     default_message = "Promo code is not valid."
+
+
+class ReturnNotAllowedError(OrderServiceError):
+    default_message = "A return can only be requested for a completed order within 7 days."
+
+
+class ReturnAlreadyRequestedError(OrderServiceError):
+    default_message = "A return was already requested for this order."

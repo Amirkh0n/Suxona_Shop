@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.db.models import Count
 
 from apps.common.admin import ORDER_STATUS_COLORS, render_status_badge
-from apps.orders.models import Cart, CartItem, Order, OrderItem, PromoCode
+from apps.orders.models import Cart, CartItem, Order, OrderItem, PromoCode, ReturnRequest
 
 
 class OrderItemInline(admin.TabularInline):
@@ -171,3 +171,11 @@ class PromoCodeAdmin(admin.ModelAdmin):
     search_fields = ("code",)
     raw_id_fields = ("store",)
     readonly_fields = ("used_count", "created_at", "updated_at")
+
+
+@admin.register(ReturnRequest)
+class ReturnRequestAdmin(admin.ModelAdmin):
+    list_display = ("order", "status", "created_at")
+    list_filter = ("status",)
+    raw_id_fields = ("order",)
+    readonly_fields = ("created_at", "updated_at")
