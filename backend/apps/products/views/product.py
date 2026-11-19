@@ -1,3 +1,4 @@
+from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -47,6 +48,9 @@ class ProductListCreateView(PaginatedAPIView):
             OpenApiParameter("search", str, description="Search by name/description."),
             OpenApiParameter("category", int, description="Filter by category id."),
             OpenApiParameter("store", int, description="Filter by store id."),
+            OpenApiParameter(
+                "on_sale", bool, description="Only discounted products (old_price > price)."
+            ),
         ],
         responses={200: ProductListSerializer(many=True)},
     )
@@ -60,9 +64,13 @@ class ProductListCreateView(PaginatedAPIView):
         elif category:
             products = ProductSelector.get_products_by_category(category)
         elif store:
-            products = ProductSelector.get_store_products(store)
+            # Public endpoint: never expose drafts/pending/rejected products.
+            products = ProductSelector.get_public_store_products(store)
         else:
             products = ProductSelector.get_active_products()
+
+        if request.query_params.get("on_sale", "").lower() in ("1", "true"):
+            products = products.filter(old_price__isnull=False, old_price__gt=F("price"))
 
         return self.paginate(products, ProductListSerializer, request)
 

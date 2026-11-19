@@ -100,3 +100,7 @@ class ProductStatusForbiddenError(ProductServiceError):
 
 class ProductNotPendingReviewError(ProductServiceError):
     default_message = "Only products pending review can be approved or rejected."
+
+
+class InvalidDiscountError(ProductServiceError):
+    default_message = "old_price must be greater than price."

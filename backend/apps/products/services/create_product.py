@@ -7,6 +7,7 @@ from apps.common.enums import ProductStatus, StoreStatus
 from apps.products.exceptions import (
     CategoryNotFound,
     DuplicateProductError,
+    InvalidDiscountError,
     NotProductOwnerError,
     StoreNotActiveError,
     StoreNotFound,
@@ -36,6 +37,7 @@ class CreateProductService:
         price: Decimal,
         description: str = "",
         stock: int | None = None,
+        old_price: Decimal | None = None,
     ) -> Product:
         locked_store = Store.objects.select_for_update().filter(pk=store.pk).first()
         if locked_store is None:
@@ -50,6 +52,9 @@ class CreateProductService:
         if not Category.objects.filter(pk=category_id).exists():
             raise CategoryNotFound()
 
+        if old_price is not None and old_price <= price:
+            raise InvalidDiscountError()
+
         try:
             return Product.objects.create(
                 store=locked_store,
@@ -57,6 +62,7 @@ class CreateProductService:
                 name=name,
                 description=description,
                 price=price,
+                old_price=old_price,
                 stock=stock,
                 status=ProductStatus.DRAFT,
             )

@@ -38,9 +38,31 @@ class ProductSelector:
         )
 
     @staticmethod
+    def get_favorite_products(user_id) -> QuerySet[Product]:
+        return (
+            Product.objects.filter(
+                favorites__user_id=user_id,
+                status__in=(ProductStatus.ACTIVE, ProductStatus.OUT_OF_STOCK),
+            )
+            .select_related("store", "category")
+            .prefetch_related("images", VARIANT_PREFETCH)
+            .order_by("-favorites__created_at")
+        )
+
+    @staticmethod
     def get_store_products(store_id) -> QuerySet[Product]:
         return (
             Product.objects.filter(store_id=store_id)
+            .select_related("store", "category")
+            .prefetch_related("images", VARIANT_PREFETCH)
+            .order_by("-created_at")
+        )
+
+    @staticmethod
+    def get_public_store_products(store_id) -> QuerySet[Product]:
+        """What shoppers see on a store page: live (ACTIVE) products only."""
+        return (
+            Product.objects.filter(store_id=store_id, status=ProductStatus.ACTIVE)
             .select_related("store", "category")
             .prefetch_related("images", VARIANT_PREFETCH)
             .order_by("-created_at")

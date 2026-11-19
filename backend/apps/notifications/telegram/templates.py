@@ -168,7 +168,11 @@ def seller_order_card(
     ]
     if note:
         lines.append(f"Izoh: {esc(note)}")
-    lines += ["", f"<b>Jami: {esc(total)} so'm</b>", f"Holat: {ORDER_CARD_STATUS.get(status, status)}"]
+    lines += [
+        "",
+        f"<b>Jami: {esc(total)} so'm</b>",
+        f"Holat: {ORDER_CARD_STATUS.get(status, status)}",
+    ]
     return "\n".join(lines)
 
 

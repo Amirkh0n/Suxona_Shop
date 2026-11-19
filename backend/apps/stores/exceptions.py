@@ -51,3 +51,15 @@ class DuplicateVillageError(StoreServiceError):
 
 class VillageInUseError(StoreServiceError):
     default_message = "Village is referenced by other records and cannot be deleted."
+
+
+class ReviewOrderNotFound(StoreServiceError):
+    default_message = "Order was not found."
+
+
+class ReviewNotAllowedError(StoreServiceError):
+    default_message = "Only the customer of a completed order can review it."
+
+
+class ReviewAlreadyExistsError(StoreServiceError):
+    default_message = "This order has already been reviewed."

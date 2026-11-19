@@ -3,6 +3,9 @@ from django.urls import path
 from apps.products.views import (
     CategoryDetailView,
     CategoryListCreateView,
+    FavoriteIdsView,
+    FavoriteListView,
+    FavoriteToggleView,
     MyProductsView,
     ProductDetailView,
     ProductImageDeleteView,
@@ -16,6 +19,14 @@ from apps.products.views import (
 app_name = "products"
 
 urlpatterns = [
+    # Favorites
+    path("favorites", FavoriteListView.as_view(), name="favorite-list"),
+    path("favorites/ids", FavoriteIdsView.as_view(), name="favorite-ids"),
+    path(
+        "products/<int:product_id>/favorite",
+        FavoriteToggleView.as_view(),
+        name="favorite-toggle",
+    ),
     # Products
     path("products", ProductListCreateView.as_view(), name="product-list"),
     path("products/my", MyProductsView.as_view(), name="product-my"),

@@ -129,14 +129,20 @@ def seller_order_view(order) -> tuple[str, list[list[client.Action]], list[clien
         for i in order.items.select_related("product", "variant")
     ]
     address = order.address
+    if address is None:
+        address_text = "Olib ketish (do'kondan)"
+    else:
+        address_text = f"{address.village.name}, {address.street}, {address.house}"
     text = templates.seller_order_card(
         order_id=order.pk,
         status=order.status,
-        customer=_customer_name(order.customer),
-        phone=order.customer.phone,
-        address=f"{address.village.name}, {address.street}, {address.house}",
+        customer=order.contact_name or _customer_name(order.customer),
+        phone=order.contact_phone or order.customer.phone,
+        address=address_text,
         items=items,
-        delivery=f"{_money(order.delivery_price)} so'm",
+        delivery=(
+            "olib ketish" if address is None else f"{_money(order.delivery_price)} so'm"
+        ),
         note=order.note,
         total=_money(order.total),
     )

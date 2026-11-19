@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.selectors import AddressSelector
+from apps.common.enums import DeliveryMethod
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import (
     IsAuthenticatedUser,
@@ -77,15 +78,22 @@ class OrderCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        address = AddressSelector.get_user_address(
-            request.user.id,
-            data["address_id"],
-        )
-        if address is None:
-            return Response(
-                {"detail": "Address not found."},
-                status=status.HTTP_404_NOT_FOUND,
+        pickup = data["delivery_method"] == DeliveryMethod.PICKUP
+        address = None
+        if not pickup:
+            address = AddressSelector.get_user_address(
+                request.user.id,
+                data["address_id"],
             )
+            if address is None:
+                return Response(
+                    {"detail": "Address not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        user = request.user
+        contact_name = data.get("contact_name") or user.first_name
+        contact_phone = data.get("contact_phone") or user.phone
 
         try:
             order, created = IdempotentCreateOrderService.execute(
@@ -94,6 +102,9 @@ class OrderCreateView(APIView):
                 store=store,
                 address=address,
                 note=data.get("note", ""),
+                delivery_method=data["delivery_method"],
+                contact_name=contact_name,
+                contact_phone=contact_phone,
             )
         except IdempotencyKeyReuseError as exc:
             return Response(

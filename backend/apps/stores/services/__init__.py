@@ -1,6 +1,7 @@
 from .approve_store import ApproveStoreService
 from .create_delivery_zone import CreateDeliveryZoneService
 from .create_store_application import CreateStoreApplicationService
+from .create_store_review import CreateStoreReviewService
 from .create_village import CreateVillageService
 from .delete_delivery_zone import DeleteDeliveryZoneService
 from .delete_village import DeleteVillageService
@@ -10,6 +11,7 @@ from .update_store import UpdateStoreService
 from .update_village import UpdateVillageService
 
 __all__ = [
+    "CreateStoreReviewService",
     "ApproveStoreService",
     "CreateDeliveryZoneService",
     "CreateStoreApplicationService",

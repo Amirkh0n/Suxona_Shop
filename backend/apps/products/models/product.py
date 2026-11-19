@@ -26,6 +26,9 @@ class Product(BaseModel):
         choices=ProductStatus.choices,
         default=ProductStatus.DRAFT,
     )
+    # Price before the discount. When set (and > price) the product is "on
+    # sale" and clients show the strike-through price and discount_percent.
+    old_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     # --- moderation -------------------------------------------------------
     # approved_at is set the first time an admin approves the product and is
     # never cleared: it is what lets the seller hide/show an already-approved
@@ -65,7 +68,18 @@ class Product(BaseModel):
                 condition=Q(stock__gte=0) | Q(stock__isnull=True),
                 name="product_stock_non_negative",
             ),
+            models.CheckConstraint(
+                condition=Q(old_price__isnull=True) | Q(old_price__gt=models.F("price")),
+                name="product_old_price_above_price",
+            ),
         ]
+
+    @property
+    def discount_percent(self) -> int | None:
+        """Whole-number discount vs old_price, or None when not on sale."""
+        if self.old_price is None or self.old_price <= self.price:
+            return None
+        return int((self.old_price - self.price) * 100 / self.old_price)
 
     def __str__(self) -> str:
         return self.name

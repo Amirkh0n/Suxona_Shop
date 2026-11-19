@@ -13,6 +13,7 @@ from apps.stores.serializers.store import StoreListSerializer
 
 class ProductListSerializer(serializers.ModelSerializer):
     primary_image = serializers.SerializerMethodField()
+    discount_percent = serializers.IntegerField(read_only=True, allow_null=True)
 
     class Meta:
         model = Product
@@ -20,6 +21,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "price",
+            "old_price",
+            "discount_percent",
             "stock",
             "status",
             "store_id",
@@ -42,6 +45,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     is_approved = serializers.SerializerMethodField()
+    discount_percent = serializers.IntegerField(read_only=True, allow_null=True)
 
     @extend_schema_field(serializers.BooleanField())
     def get_is_approved(self, obj) -> bool:
@@ -56,6 +60,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "price",
+            "old_price",
+            "discount_percent",
             "stock",
             "status",
             "images",
@@ -73,6 +79,9 @@ class ProductCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     description = serializers.CharField(required=False, allow_blank=True)
     price = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
+    old_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
+    )
     stock = serializers.IntegerField(min_value=0, required=False, allow_null=True)
 
 
@@ -85,6 +94,10 @@ class ProductUpdateSerializer(serializers.Serializer):
         decimal_places=2,
         min_value=0,
         required=False,
+    )
+    # null clears the discount.
+    old_price = serializers.DecimalField(
+        max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
     )
     stock = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     status = serializers.CharField(max_length=20, required=False)

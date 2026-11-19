@@ -75,3 +75,15 @@ class IdempotencyKeyReuseError(OrderServiceError):
 
 class InvalidIdempotencyKeyError(OrderServiceError):
     default_message = "Idempotency-Key must be 8-128 characters of letters, digits, - or _."
+
+
+class AddressRequiredError(OrderServiceError):
+    default_message = "A delivery address is required for delivery orders."
+
+
+class PickupNotAvailableError(OrderServiceError):
+    default_message = "This store does not offer pickup."
+
+
+class MinimumOrderNotReachedError(OrderServiceError):
+    default_message = "The order total is below the store's minimum order amount."

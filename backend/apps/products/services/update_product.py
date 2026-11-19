@@ -8,6 +8,7 @@ from apps.notifications.telegram.services import after_commit, notify_admins_pro
 from apps.products.exceptions import (
     CategoryNotFound,
     DuplicateProductError,
+    InvalidDiscountError,
     InvalidProductStatusError,
     NotProductOwnerError,
     ProductNeedsImageError,
@@ -77,6 +78,14 @@ class UpdateProductService:
             if field in fields and fields[field] is not None:
                 setattr(locked, field, fields[field])
                 update_fields.append(field)
+
+        # old_price may be explicitly null (= end the sale), so it is handled
+        # apart from SCALAR_FIELDS, which skips None.
+        if "old_price" in fields:
+            locked.old_price = fields["old_price"]
+            update_fields.append("old_price")
+        if locked.old_price is not None and locked.old_price <= locked.price:
+            raise InvalidDiscountError()
 
         status_value = fields.get("status")
         if status_value is not None:

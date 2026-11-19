@@ -23,7 +23,12 @@ class UpdateStoreService:
         "telegram_username",
         "logo",
         "banner",
+        "min_order_amount",
+        "delivery_time",
+        "allows_pickup",
     )
+    # Fields where None is meaningful ("no opening hours set").
+    NULLABLE_FIELDS = ("opens_at", "closes_at")
 
     @staticmethod
     @transaction.atomic
@@ -40,6 +45,11 @@ class UpdateStoreService:
         update_fields: list[str] = []
         for field in UpdateStoreService.UPDATABLE_FIELDS:
             if field in fields and fields[field] is not None:
+                setattr(locked_store, field, fields[field])
+                update_fields.append(field)
+
+        for field in UpdateStoreService.NULLABLE_FIELDS:
+            if field in fields:
                 setattr(locked_store, field, fields[field])
                 update_fields.append(field)
 

@@ -22,10 +22,31 @@ class Store(BaseModel):
         choices=StoreStatus.choices,
         default=StoreStatus.PENDING,
     )
+    # --- storefront info shown to shoppers ----------------------------------
+    min_order_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0, help_text="Minimum order subtotal, so'm."
+    )
+    opens_at = models.TimeField(null=True, blank=True)
+    closes_at = models.TimeField(null=True, blank=True)
+    delivery_time = models.CharField(
+        max_length=60, blank=True, help_text='Free text, e.g. "1-2 kun".'
+    )
+    allows_pickup = models.BooleanField(
+        default=False, help_text="Customers may collect orders at the store."
+    )
+    # Denormalised from StoreReview by CreateStoreReviewService; read-only.
+    rating_avg = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    rating_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "Do'kon"
         verbose_name_plural = "Do'konlar"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(min_order_amount__gte=0),
+                name="store_min_order_non_negative",
+            ),
+        ]
         indexes = [
             models.Index(fields=["owner"], name="store_owner_idx"),
             models.Index(fields=["name"], name="store_name_idx"),

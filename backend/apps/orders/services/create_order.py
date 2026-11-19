@@ -3,14 +3,17 @@ from decimal import Decimal
 from django.db import transaction
 
 from apps.accounts.models import Address, User
-from apps.common.enums import OrderStatus, ProductStatus, StoreStatus
+from apps.common.enums import DeliveryMethod, OrderStatus, ProductStatus, StoreStatus
 from apps.notifications.telegram.services import after_commit, notify_seller_new_order
 from apps.orders.exceptions import (
     AddressOwnershipError,
+    AddressRequiredError,
     CartNotFoundError,
     DeliveryZoneNotFoundError,
     EmptyStoreCartError,
     InsufficientStockError,
+    MinimumOrderNotReachedError,
+    PickupNotAvailableError,
     ProductNotActiveError,
     ProductVariantMismatchError,
     ProductVariantNotPurchasable,
@@ -28,11 +31,22 @@ class CreateOrderService:
         *,
         customer: User,
         store: Store,
-        address: Address,
+        address: Address | None = None,
         note: str = "",
+        delivery_method: str = DeliveryMethod.DELIVERY,
+        contact_name: str = "",
+        contact_phone: str = "",
     ) -> Order:
-        if address.user_id != customer.pk:
-            raise AddressOwnershipError()
+        pickup = delivery_method == DeliveryMethod.PICKUP
+        if pickup:
+            if not store.allows_pickup:
+                raise PickupNotAvailableError()
+            address = None  # nothing to deliver to
+        else:
+            if address is None:
+                raise AddressRequiredError()
+            if address.user_id != customer.pk:
+                raise AddressOwnershipError()
 
         if store.status != StoreStatus.ACTIVE:
             raise StoreNotActiveError()
@@ -89,14 +103,16 @@ class CreateOrderService:
             if available_stock is not None and available_stock < item.quantity:
                 raise InsufficientStockError()
 
-        try:
-            delivery_zone = DeliveryZone.objects.get(
-                store=store,
-                village=address.village,
-                is_active=True,
-            )
-        except DeliveryZone.DoesNotExist as exc:
-            raise DeliveryZoneNotFoundError() from exc
+        delivery_zone = None
+        if not pickup:
+            try:
+                delivery_zone = DeliveryZone.objects.get(
+                    store=store,
+                    village=address.village,
+                    is_active=True,
+                )
+            except DeliveryZone.DoesNotExist as exc:
+                raise DeliveryZoneNotFoundError() from exc
 
         line_items = []
         subtotal = Decimal("0")
@@ -108,13 +124,23 @@ class CreateOrderService:
             subtotal += line_subtotal
             line_items.append((item, product, variant, price, line_subtotal))
 
-        delivery_price = delivery_zone.delivery_price
+        # Minimum applies to the goods, not the delivery fee.
+        if subtotal < store.min_order_amount:
+            raise MinimumOrderNotReachedError(
+                f"Minimal buyurtma summasi {store.min_order_amount:,.0f} so'm."
+                .replace(",", " ")
+            )
+
+        delivery_price = delivery_zone.delivery_price if delivery_zone else Decimal("0")
         total = subtotal + delivery_price
 
         order = Order.objects.create(
             customer=customer,
             store=store,
             address=address,
+            delivery_method=delivery_method,
+            contact_name=contact_name,
+            contact_phone=contact_phone,
             delivery_price=delivery_price,
             subtotal=subtotal,
             total=total,

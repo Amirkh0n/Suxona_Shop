@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from apps.common.enums import OrderStatus
+from apps.common.enums import DeliveryMethod, OrderStatus
 from apps.common.models import BaseModel
 
 
@@ -17,11 +17,22 @@ class Order(BaseModel):
         on_delete=models.PROTECT,
         related_name="orders",
     )
+    # Null for PICKUP orders.
     address = models.ForeignKey(
         "accounts.Address",
         on_delete=models.PROTECT,
         related_name="orders",
+        null=True,
+        blank=True,
     )
+    delivery_method = models.CharField(
+        max_length=10,
+        choices=DeliveryMethod.choices,
+        default=DeliveryMethod.DELIVERY,
+    )
+    # Who to call for this order; defaults to the customer's own details.
+    contact_name = models.CharField(max_length=255, blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
     delivery_price = models.DecimalField(max_digits=12, decimal_places=2)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
     total = models.DecimalField(max_digits=12, decimal_places=2)

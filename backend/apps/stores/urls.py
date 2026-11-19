@@ -5,12 +5,14 @@ from apps.stores.views import (
     DeliveryZoneCreateView,
     DeliveryZoneDetailView,
     MyStoreView,
+    OrderReviewCreateView,
     PendingStoreApplicationListView,
     RejectStoreApplicationView,
     StoreApplicationCreateView,
     StoreDeliveryZoneListView,
     StoreDetailView,
     StoreListView,
+    StoreReviewListView,
     VillageDetailView,
     VillageListView,
 )
@@ -26,6 +28,16 @@ urlpatterns = [
         "stores/<int:store_id>/delivery-zones",
         StoreDeliveryZoneListView.as_view(),
         name="store-delivery-zones",
+    ),
+    path(
+        "stores/<int:store_id>/reviews",
+        StoreReviewListView.as_view(),
+        name="store-reviews",
+    ),
+    path(
+        "orders/<int:order_id>/review",
+        OrderReviewCreateView.as_view(),
+        name="order-review",
     ),
     # Store applications
     path(
