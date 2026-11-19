@@ -1046,3 +1046,4 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .star-picker button { background: none; border: 0; cursor: pointer; padding: 0; color: var(--color-line); }
 .star-picker button.on { color: #f5a623; }
 .delivery-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-5); }
+.product-card-price .old-price { display: block; margin: 0; }
