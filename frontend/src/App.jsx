@@ -16,6 +16,7 @@ import Checkout from './pages/customer/Checkout';
 import OrderSuccess from './pages/customer/OrderSuccess';
 import OrderList from './pages/customer/OrderList';
 import OrderDetail from './pages/customer/OrderDetail';
+import Favorites from './pages/customer/Favorites';
 import Profile from './pages/customer/Profile';
 import Addresses from './pages/customer/Addresses';
 import BecomeSeller from './pages/customer/BecomeSeller';
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/mahsulot/:productId" element={<ProductDetail />} />
         <Route path="/dokon/:storeId" element={<StoreDetail />} />
         <Route path="/buyurtma/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+        <Route path="/sevimlilar" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
         <Route path="/profil/manzillar" element={<ProtectedRoute><Addresses /></ProtectedRoute>} />
         <Route path="/dokon-ochish" element={<ProtectedRoute><BecomeSeller /></ProtectedRoute>} />
       </Route>

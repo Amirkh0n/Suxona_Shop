@@ -1,37 +1,34 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { favoriteApi } from '../api/endpoints';
+import { useAuth } from './AuthContext';
 
-// Wishlist/favorites has no backend support in schema.yml (no endpoint to
-// persist it against the user's account). Rather than fake an account-level
-// feature, this keeps a real, working favorites list — just scoped to this
-// browser via localStorage, not synced anywhere. Honest about what it is.
-const STORAGE_KEY = 'suxona_favorites';
-
+// Logged-in shoppers: favourites live on the server (synced across devices).
+// Guests: nothing is stored; toggling asks the caller to log in.
 const FavoritesContext = createContext(null);
 
-function readStored() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
 export function FavoritesProvider({ children }) {
-  const [ids, setIds] = useState(readStored);
+  const { user } = useAuth();
+  const [ids, setIds] = useState([]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
-    } catch {
-      /* storage unavailable (private mode etc.) — favorites just won't persist */
-    }
-  }, [ids]);
+    if (!user) { setIds([]); return; }
+    favoriteApi.ids().then(({ data }) => setIds(data.ids || [])).catch(() => {});
+  }, [user]);
 
   const isFavorite = (productId) => ids.includes(productId);
-  const toggleFavorite = (productId) => {
-    setIds((prev) => (prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]));
-  };
+
+  // Returns false when the shopper must log in first.
+  const toggleFavorite = useCallback(async (productId) => {
+    if (!user) return false;
+    const was = ids.includes(productId);
+    setIds((prev) => (was ? prev.filter((i) => i !== productId) : [...prev, productId])); // optimistic
+    try {
+      await (was ? favoriteApi.remove(productId) : favoriteApi.add(productId));
+    } catch {
+      setIds((prev) => (was ? [...prev, productId] : prev.filter((i) => i !== productId)));
+    }
+    return true;
+  }, [user, ids]);
 
   return (
     <FavoritesContext.Provider value={{ ids, isFavorite, toggleFavorite }}>

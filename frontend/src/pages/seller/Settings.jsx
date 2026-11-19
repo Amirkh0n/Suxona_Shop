@@ -10,7 +10,7 @@ import { TrashIcon, PlusIcon } from '../../components/Icons';
 
 export default function SellerSettings() {
   const { myStore, refreshMyStore } = useAuth();
-  const [form, setForm] = useState({ name: '', description: '', phone: '', telegram_username: '' });
+  const [form, setForm] = useState({ name: '', description: '', phone: '', telegram_username: '', min_order_amount: '0', opens_at: '', closes_at: '', delivery_time: '', allows_pickup: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -36,6 +36,11 @@ export default function SellerSettings() {
         description: myStore.description || '',
         phone: myStore.phone || '',
         telegram_username: myStore.telegram_username || '',
+        min_order_amount: myStore.min_order_amount ?? '0',
+        opens_at: (myStore.opens_at || '').slice(0, 5),
+        closes_at: (myStore.closes_at || '').slice(0, 5),
+        delivery_time: myStore.delivery_time || '',
+        allows_pickup: Boolean(myStore.allows_pickup),
       });
     }
   }, [myStore]);
@@ -101,7 +106,11 @@ export default function SellerSettings() {
     setSaved(false);
     setSaving(true);
     try {
-      await storeApi.updateMyStore(form);
+      await storeApi.updateMyStore({
+        ...form,
+        opens_at: form.opens_at || null,
+        closes_at: form.closes_at || null,
+      });
       await refreshMyStore();
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -196,6 +205,25 @@ export default function SellerSettings() {
           <label htmlFor="telegram_username">Telegram username</label>
           <input id="telegram_username" name="telegram_username" value={form.telegram_username} onChange={onChange} placeholder="@dokonim" />
         </div>
+        <div className="field">
+          <label htmlFor="min_order_amount">Minimal buyurtma summasi (so'm)</label>
+          <input id="min_order_amount" name="min_order_amount" type="number" min="0" value={form.min_order_amount} onChange={onChange} />
+        </div>
+        <div className="field">
+          <label htmlFor="opens_at">Ish vaqti</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input id="opens_at" name="opens_at" type="time" value={form.opens_at} onChange={onChange} />
+            <input name="closes_at" type="time" value={form.closes_at} onChange={onChange} aria-label="Yopilish vaqti" />
+          </div>
+        </div>
+        <div className="field">
+          <label htmlFor="delivery_time">Yetkazish vaqti</label>
+          <input id="delivery_time" name="delivery_time" value={form.delivery_time} onChange={onChange} placeholder="Masalan: 30-45 daqiqa" />
+        </div>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 'var(--sp-4)' }}>
+          <input type="checkbox" checked={form.allows_pickup} onChange={(e) => setForm({ ...form, allows_pickup: e.target.checked })} />
+          Do'kondan olib ketishga ruxsat berish
+        </label>
         <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saqlanmoqda...' : 'Saqlash'}</button>
       </form>
 

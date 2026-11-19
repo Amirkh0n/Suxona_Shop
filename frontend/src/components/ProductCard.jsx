@@ -52,10 +52,14 @@ export default function ProductCard({ product }) {
           type="button"
           className={`product-card-fav${favorite ? ' active' : ''}`}
           aria-label={favorite ? "Sevimlilardan o'chirish" : "Sevimlilarga qo'shish"}
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(product.id); }}
+          onClick={async (e) => {
+            e.preventDefault(); e.stopPropagation();
+            if (!(await toggleFavorite(product.id))) navigate('/kirish', { state: { from: { pathname: `/mahsulot/${product.id}` } } });
+          }}
         >
           <HeartIcon filled={favorite} width={16} height={16} />
         </button>
+        {product.discount_percent && !outOfStock && <span className="discount-badge">-{product.discount_percent}%</span>}
         {outOfStock && <span className="badge badge-cancelled product-card-stock-badge">Tugagan</span>}
         {!outOfStock && (
           <button
@@ -71,7 +75,10 @@ export default function ProductCard({ product }) {
       </div>
       <div className="product-card-body">
         <div className="product-card-name">{product.name}</div>
-        <div className="product-card-price">{formatSum(product.price)}</div>
+        <div className="product-card-price">
+          {formatSum(product.price)}
+          {product.old_price && <span className="old-price">{formatSum(product.old_price)}</span>}
+        </div>
       </div>
     </Link>
   );

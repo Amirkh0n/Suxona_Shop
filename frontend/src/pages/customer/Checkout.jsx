@@ -1,5 +1,6 @@
 import { linePrice, variantLabel, availableStock } from '../../utils/variants';
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addressApi, orderApi, productApi, storeApi, villageApi } from '../../api/endpoints';
 import { useCart } from '../../context/CartContext';
@@ -14,6 +15,11 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { cart, refresh: refreshCart } = useCart();
 
+  const { user } = useAuth();
+  const [store, setStore] = useState(null);
+  const [method, setMethod] = useState('DELIVERY');
+  const [contactName, setContactName] = useState(user?.first_name || '');
+  const [contactPhone, setContactPhone] = useState(user?.phone || '');
   const [step, setStep] = useState(1);
   const [addresses, setAddresses] = useState([]);
   const [villages, setVillages] = useState([]);
@@ -30,8 +36,10 @@ export default function Checkout() {
       addressApi.list(),
       villageApi.list().catch(() => ({ data: { results: [] } })),
       storeApi.deliveryZones(storeId).catch(() => ({ data: [] })),
+      storeApi.retrieve(storeId).catch(() => ({ data: null })),
     ])
-      .then(([addrRes, villageRes, zonesRes]) => {
+      .then(([addrRes, villageRes, zonesRes, storeRes]) => {
+        setStore(storeRes.data);
         const list = addrRes.data?.results || addrRes.data || [];
         setAddresses(list);
         setVillages(villageRes.data?.results || []);
@@ -51,7 +59,10 @@ export default function Checkout() {
   const group = (cart?.stores || []).find((g) => String(g.store_id) === String(storeId));
   const items = group?.items || [];
   const subtotal = items.reduce((sum, item) => sum + linePrice(item) * item.quantity, 0);
-  const deliveryEstimate = matchedZone ? Number(matchedZone.delivery_price) : null;
+  const pickup = method === 'PICKUP';
+  const minOrder = Number(store?.min_order_amount || 0);
+  const belowMin = subtotal < minOrder;
+  const deliveryEstimate = pickup ? 0 : matchedZone ? Number(matchedZone.delivery_price) : null;
   const totalEstimate = deliveryEstimate != null ? subtotal + deliveryEstimate : null;
 
   // The cart was fetched when the shopper first added items, possibly
@@ -93,7 +104,9 @@ export default function Checkout() {
 
   const goReview = async () => {
     setError('');
-    if (!addressId) { setError('Iltimos, yetkazib berish manzilini tanlang.'); return; }
+    if (belowMin) { setError(`Minimal buyurtma summasi ${formatSum(minOrder)}.`); return; }
+    if (!contactName.trim() || !contactPhone.trim()) { setError("Aloqa uchun ism va telefonni kiriting."); return; }
+    if (!pickup && !addressId) { setError('Iltimos, yetkazib berish manzilini tanlang.'); return; }
     const ok = await revalidateStock();
     if (!ok) return;
     setStep(2);
@@ -117,11 +130,16 @@ export default function Checkout() {
     if (!ok) return;
     setSubmitting(true);
     try {
-      const sig = `${storeId}|${addressId}|${note || ''}`;
+      const sig = `${storeId}|${method}|${pickup ? '' : addressId}|${contactName}|${contactPhone}|${note || ''}`;
       const { data } = await orderApi.create(
-        Number(storeId),
-        Number(addressId),
-        note || undefined,
+        {
+          store_id: Number(storeId),
+          delivery_method: method,
+          ...(pickup ? {} : { address_id: Number(addressId) }),
+          contact_name: contactName.trim(),
+          contact_phone: contactPhone.trim(),
+          note: note || undefined,
+        },
         idempotencyKeyFor(sig)
       );
       await refreshCart();
@@ -135,7 +153,7 @@ export default function Checkout() {
 
   if (loading) return <PageSpinner />;
 
-  if (addresses.length === 0) {
+  if (addresses.length === 0 && !(store?.allows_pickup)) {
     return (
       <div>
         <PageHeader title="Buyurtma berish" onBack={() => navigate(-1)} />
@@ -162,6 +180,30 @@ export default function Checkout() {
         <div className="container checkout-step">
           {error && <div className="alert alert-error">{error}</div>}
 
+          {store?.allows_pickup && (
+            <div className="delivery-toggle">
+              <button type="button" className={`option-card${!pickup ? ' active' : ''}`} onClick={() => setMethod('DELIVERY')}>
+                <span className="option-card-body"><span className="option-card-title">🚚 Yetkazib berish</span></span>
+              </button>
+              <button type="button" className={`option-card${pickup ? ' active' : ''}`} onClick={() => setMethod('PICKUP')}>
+                <span className="option-card-body"><span className="option-card-title">🏪 Olib ketish</span></span>
+              </button>
+            </div>
+          )}
+
+          {belowMin && <div className="alert alert-error">Minimal buyurtma summasi {formatSum(minOrder)}. Savatga yana {formatSum(minOrder - subtotal)} lik mahsulot qo'shing.</div>}
+
+          <div className="checkout-section-label">Aloqa ma'lumotlari</div>
+          <div className="field"><label htmlFor="cname">Ism</label><input id="cname" value={contactName} onChange={(e) => setContactName(e.target.value)} /></div>
+          <div className="field"><label htmlFor="cphone">Telefon</label><input id="cphone" type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} /></div>
+
+          {pickup ? (
+            <div className="card review-card" style={{ marginBottom: 'var(--sp-5)' }}>
+              <div className="review-card-title">Do'kondan olib ketish</div>
+              <p style={{ margin: 0 }}>{store?.name}{store?.phone ? ` · ${store.phone}` : ''}</p>
+              <p className="muted" style={{ margin: 0 }}>Yetkazib berish to'lovi yo'q.</p>
+            </div>
+          ) : (<>
           <div className="checkout-section-label">Manzil</div>
           {addresses.map((addr) => (
             <button
@@ -198,6 +240,8 @@ export default function Checkout() {
             </span>
           </div>
 
+          </>)}
+
           <div className="field" style={{ marginTop: 'var(--sp-5)' }}>
             <label htmlFor="note">Izoh (ixtiyoriy)</label>
             <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Kuryerga izoh, masalan: darvoza rangi..." />
@@ -218,9 +262,15 @@ export default function Checkout() {
           </div>
 
           <div className="card review-card">
-            <div className="review-card-title">Yetkazib berish manzili</div>
-            <p style={{ margin: 0 }}>{selectedAddress?.street}, {selectedAddress?.house}</p>
-            <p style={{ margin: 0 }}>{villageName(selectedAddress?.village)}{selectedAddress?.landmark ? ` · ${selectedAddress.landmark}` : ''}</p>
+            <div className="review-card-title">{pickup ? "Olib ketish" : 'Yetkazib berish manzili'}</div>
+            {pickup ? (
+              <p style={{ margin: 0 }}>{store?.name} do'konidan</p>
+            ) : (<>
+              <p style={{ margin: 0 }}>{selectedAddress?.street}, {selectedAddress?.house}</p>
+              <p style={{ margin: 0 }}>{villageName(selectedAddress?.village)}{selectedAddress?.landmark ? ` · ${selectedAddress.landmark}` : ''}</p>
+            </>)}
+            <div className="review-card-title" style={{ marginTop: 'var(--sp-4)' }}>Aloqa</div>
+            <p style={{ margin: 0 }}>{contactName} · {contactPhone}</p>
             {note && (
               <>
                 <div className="review-card-title" style={{ marginTop: 'var(--sp-4)' }}>Izoh</div>
@@ -233,7 +283,7 @@ export default function Checkout() {
             <div className="review-item-row"><span className="muted">Mahsulotlar summasi</span><span>{formatSum(subtotal)}</span></div>
             <div className="review-item-row">
               <span className="muted">Yetkazib berish</span>
-              <span>{deliveryEstimate != null ? formatSum(deliveryEstimate) : 'Tasdiqlashda'}</span>
+              <span>{pickup ? 'Bepul' : deliveryEstimate != null ? formatSum(deliveryEstimate) : 'Tasdiqlashda'}</span>
             </div>
             <div className="review-item-row" style={{ fontWeight: 800, fontSize: 'var(--fs-md)', borderTop: '1px solid var(--color-line)', marginTop: 6, paddingTop: 10 }}>
               <span>Jami</span>

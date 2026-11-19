@@ -31,6 +31,7 @@ export default function ProductList() {
   }, [params]);
   const multiMode = categoryIds.length > 0;
   const storeId = params.get('store') || '';
+  const onSale = params.get('on_sale') === 'true';
   const { notify } = usePreviewNotice();
 
   const [stores, setStores] = useState([]);
@@ -92,11 +93,11 @@ export default function ProductList() {
     let cancelled = false;
     setLoading(true);
     productApi
-      .list({ page, search: search || undefined, category: categoryId || undefined, store: storeId || undefined })
+      .list({ page, search: search || undefined, category: categoryId || undefined, store: storeId || undefined, on_sale: onSale || undefined })
       .then(({ data }) => { if (!cancelled) setData(data); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [multiMode, page, search, categoryId, storeId]);
+  }, [multiMode, page, search, categoryId, storeId, onSale]);
 
   // Multi-category — fetch page 1 of each category id in parallel and merge.
   // A product that sits directly in more than one of the selected categories

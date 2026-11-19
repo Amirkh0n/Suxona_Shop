@@ -38,6 +38,7 @@ export const categoryApi = {
 export const storeApi = {
   list: (params) => api.get('/stores', { params }),
   retrieve: (id) => api.get(`/stores/${id}`),
+  reviews: (storeId, params) => api.get(`/stores/${storeId}/reviews`, { params }),
   deliveryZones: (storeId) => api.get(`/stores/${storeId}/delivery-zones`),
   myStore: () => api.get('/stores/my'),
   updateMyStore: (payload) => api.patch('/stores/my', payload),
@@ -76,6 +77,14 @@ export const variantApi = {
   remove: (variantId) => api.delete(`/product-variants/${variantId}`),
 };
 
+/* ---------- Favorites ---------- */
+export const favoriteApi = {
+  list: (params) => api.get('/favorites', { params }),
+  ids: () => api.get('/favorites/ids'),
+  add: (productId) => api.put(`/products/${productId}/favorite`),
+  remove: (productId) => api.delete(`/products/${productId}/favorite`),
+};
+
 /* ---------- Cart ---------- */
 export const cartApi = {
   get: () => api.get('/cart'),
@@ -101,12 +110,14 @@ export const deliveryZoneApi = {
 export const orderApi = {
   // idempotencyKey makes the call safe to retry (double click, flaky network):
   // the backend returns the original order instead of creating a second one.
-  create: (storeId, addressId, note, idempotencyKey) =>
+  // payload: { store_id, delivery_method, address_id?, contact_name?, contact_phone?, note? }
+  create: (payload, idempotencyKey) =>
     api.post(
       '/orders',
-      { store_id: storeId, address_id: addressId, note },
+      payload,
       idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined
     ),
+  review: (id, payload) => api.post(`/orders/${id}/review`, payload),
   retrieve: (id) => api.get(`/orders/${id}`),
   my: (params) => api.get('/orders/my', { params }),
   storeOrders: (params) => api.get('/orders/store', { params }),

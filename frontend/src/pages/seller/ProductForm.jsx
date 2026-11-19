@@ -29,7 +29,7 @@ export default function SellerProductForm() {
   const fileInputRef = useRef(null);
 
   const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', stock: '', status: 'ACTIVE' });
+  const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', old_price: '', stock: '', status: 'ACTIVE' });
   const [images, setImages] = useState([]);
   const [variants, setVariants] = useState([]);
   const [moderation, setModeration] = useState({ approved: false, note: '' });
@@ -54,6 +54,7 @@ export default function SellerProductForm() {
         name: data.name || '',
         description: data.description || '',
         price: data.price || '',
+        old_price: data.old_price || '',
         stock: data.stock ?? '',
         status: data.status || 'ACTIVE',
       });
@@ -76,6 +77,7 @@ export default function SellerProductForm() {
         name: form.name,
         description: form.description,
         price: form.price,
+        old_price: form.old_price === '' ? null : form.old_price,
         stock: form.stock === '' ? null : Number(form.stock),
       };
       if (isEdit) {
@@ -254,6 +256,10 @@ export default function SellerProductForm() {
           <div className="field">
             <label htmlFor="price">Narx (so'm)</label>
             <input id="price" name="price" type="number" min="0" step="0.01" value={form.price} onChange={onChange} required />
+          </div>
+          <div className="field">
+            <label htmlFor="old_price">Eski narx (chegirma uchun, ixtiyoriy)</label>
+            <input id="old_price" name="old_price" type="number" min="0" step="0.01" value={form.old_price} onChange={onChange} placeholder="Narxdan katta bo'lishi kerak" />
           </div>
           <div className="field">
             <label htmlFor="stock">Miqdor (ixtiyoriy)</label>

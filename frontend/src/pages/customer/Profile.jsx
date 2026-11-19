@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { PinIcon, ReceiptIcon, StoreIcon, ChevronRightIcon, LogoutIcon, SunIcon, MoonIcon } from '../../components/Icons';
+import { HeartIcon, PinIcon, ReceiptIcon, StoreIcon, ChevronRightIcon, LogoutIcon, SunIcon, MoonIcon } from '../../components/Icons';
 import { getStoredTheme, getSystemPrefersDark, setTheme } from '../../utils/theme';
 
 export default function Profile() {
@@ -21,6 +21,7 @@ export default function Profile() {
 
   const menu = [
     { to: '/profil/manzillar', icon: PinIcon, label: 'Manzillarim' },
+    { to: '/sevimlilar', icon: HeartIcon, label: 'Sevimlilar' },
     { to: '/buyurtmalarim', icon: ReceiptIcon, label: 'Buyurtmalarim' },
     myStore
       ? { to: '/sotuvchi', icon: StoreIcon, label: "Do'konim (sotuvchi paneli)" }

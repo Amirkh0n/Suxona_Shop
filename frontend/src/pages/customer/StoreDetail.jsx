@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { categoryApi, productApi, storeApi } from '../../api/endpoints';
 import ProductCard from '../../components/ProductCard';
 import { ProductGridSkeleton } from '../../components/Skeleton';
+import { formatSum } from '../../utils/format';
 import { resolveImageUrl } from '../../utils/media';
 import { BackIcon, StarIcon, TelegramIcon } from '../../components/Icons';
 
@@ -13,6 +14,7 @@ export default function StoreDetail() {
   const [products, setProducts] = useState([]);
   const [categoryNames, setCategoryNames] = useState({});
   const [activeCategory, setActiveCategory] = useState('');
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -24,8 +26,10 @@ export default function StoreDetail() {
       storeApi.retrieve(storeId),
       productApi.list({ store: storeId }),
       categoryApi.list().catch(() => ({ data: { results: [] } })),
+      storeApi.reviews(storeId).catch(() => ({ data: { results: [] } })),
     ])
-      .then(([storeRes, productsRes, categoriesRes]) => {
+      .then(([storeRes, productsRes, categoriesRes, reviewsRes]) => {
+        setReviews(reviewsRes.data?.results || []);
         if (cancelled) return;
         setStore(storeRes.data);
         setProducts(productsRes.data?.results || []);
@@ -90,10 +94,17 @@ export default function StoreDetail() {
         </div>
         <h1 style={{ marginBottom: 2 }}>{store.name}</h1>
         <div className="store-detail-meta">
-          <span className="product-detail-rating" title="Bu do'kon uchun hali sharhlar yo'q">
-            <StarIcon width={14} height={14} /> Reyting yo'q
+          <span className="product-detail-rating">
+            <StarIcon width={14} height={14} />{' '}
+            {store.rating_count > 0 ? `${Number(store.rating_avg).toFixed(1)} (${store.rating_count})` : 'Reyting yo\'q'}
           </span>
           {store.phone && <span>· {store.phone}</span>}
+        </div>
+        <div className="store-facts">
+          {Number(store.min_order_amount) > 0 && <span className="store-fact">Min. buyurtma: {formatSum(store.min_order_amount)}</span>}
+          {store.opens_at && store.closes_at && <span className="store-fact">🕘 {store.opens_at.slice(0, 5)}–{store.closes_at.slice(0, 5)}</span>}
+          {store.delivery_time && <span className="store-fact">🚚 {store.delivery_time}</span>}
+          {store.allows_pickup && <span className="store-fact">🏪 Olib ketish mumkin</span>}
         </div>
         {store.description && <p style={{ marginTop: 'var(--sp-3)' }}>{store.description}</p>}
 
@@ -123,6 +134,18 @@ export default function StoreDetail() {
           <div className="grid grid-products">
             {filteredProducts.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
+        )}
+
+        {reviews.length > 0 && (
+          <>
+            <h2 style={{ marginTop: 'var(--sp-6)' }}>Sharhlar</h2>
+            {reviews.map((r) => (
+              <div key={r.id} className="review-list-item">
+                <strong>{r.customer_name}</strong> <span style={{ color: '#f5a623' }}>{'★'.repeat(r.rating)}</span>
+                {r.comment && <p style={{ margin: '4px 0 0' }}>{r.comment}</p>}
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>

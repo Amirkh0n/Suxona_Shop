@@ -1032,3 +1032,17 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .variant-editor-row { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--color-line); border-radius: var(--radius-md, 12px); margin-bottom: var(--sp-3); }
 .variant-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
 .variant-editor-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
+
+/* --- Discounts --- */
+.old-price { margin-left: 6px; font-weight: 500; font-size: var(--fs-sm); color: var(--color-ink-soft); text-decoration: line-through; }
+.discount-badge { position: absolute; left: 8px; top: 8px; background: var(--color-danger); color: #fff; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.discount-badge-inline { position: static; margin-left: 8px; vertical-align: middle; }
+
+/* --- Store facts, reviews --- */
+.store-facts { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+.store-fact { background: var(--color-surface-2, rgba(127,127,127,.12)); border-radius: 999px; padding: 4px 12px; font-size: var(--fs-sm); }
+.review-list-item { padding: var(--sp-3) 0; border-top: 1px solid var(--color-line); }
+.star-picker { display: flex; gap: 6px; font-size: 30px; line-height: 1; }
+.star-picker button { background: none; border: 0; cursor: pointer; padding: 0; color: var(--color-line); }
+.star-picker button.on { color: #f5a623; }
+.delivery-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-5); }

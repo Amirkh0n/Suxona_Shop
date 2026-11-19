@@ -17,16 +17,18 @@ export default function Home() {
   const [categoryTree, setCategoryTree] = useState(null);
   const [stores, setStores] = useState([]);
   const [products, setProducts] = useState([]);
+  const [sale, setSale] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [bannersRes, allCategories, storesRes, productsRes] = await Promise.all([
+      const [bannersRes, allCategories, storesRes, productsRes, saleRes] = await Promise.all([
         bannerApi.list().catch(() => ({ data: [] })),
         fetchAllCategories().catch(() => []),
         storeApi.list({ page: 1 }).catch(() => ({ data: { results: [] } })),
         productApi.list({ page: 1 }).catch(() => ({ data: { results: [] } })),
+        productApi.list({ on_sale: true }).catch(() => ({ data: { results: [] } })),
       ]);
       if (cancelled) return;
       const tree = buildCategoryTree(allCategories);
@@ -34,6 +36,7 @@ export default function Home() {
       setBanners(bannersRes.data || []);
       setCategories(tree.roots.slice(0, 10));
       setStores((storesRes.data?.results || []).slice(0, 6));
+      setSale((saleRes.data?.results || []).slice(0, 8));
       setProducts((productsRes.data?.results || []).slice(0, 8));
       setLoading(false);
     })();
@@ -92,6 +95,18 @@ export default function Home() {
                 <span className="category-chip-label">{cat.name}</span>
               </button>
             ))}
+          </div>
+        </section>
+      )}
+
+      {sale.length > 0 && (
+        <section style={{ marginTop: 'var(--sp-7)' }}>
+          <div className="section-heading">
+            <h2>🔥 Chegirmalar</h2>
+            <Link to="/mahsulotlar?on_sale=true" className="section-heading-link">Barchasi</Link>
+          </div>
+          <div className="grid grid-products">
+            {sale.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
         </section>
       )}

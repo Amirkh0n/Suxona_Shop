@@ -22,6 +22,8 @@ export default function OrderDetail() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
+  const [stars, setStars] = useState(0);
+  const [comment, setComment] = useState('');
 
   const load = () => orderApi.retrieve(orderId).then(({ data }) => setOrder(data));
 
@@ -45,6 +47,19 @@ export default function OrderDetail() {
       await load();
     } catch (err) {
       setError(extractErrorMessage(err, 'Amalni bajarishda xatolik yuz berdi.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitReview = async () => {
+    setError('');
+    setBusy(true);
+    try {
+      await orderApi.review(orderId, { rating: stars, comment });
+      await load();
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Baho yuborilmadi.'));
     } finally {
       setBusy(false);
     }
@@ -95,9 +110,14 @@ export default function OrderDetail() {
         </div>
 
         <div className="card review-card">
-          <div className="review-card-title">Yetkazib berish manzili</div>
-          <p style={{ margin: 0 }}>{order.address?.village?.name}, {order.address?.street}, {order.address?.house}</p>
-          {order.address?.landmark && <p style={{ margin: 0 }}>{order.address.landmark}</p>}
+          <div className="review-card-title">{order.address ? 'Yetkazib berish manzili' : "Do'kondan olib ketish"}</div>
+          {order.address && (
+            <>
+              <p style={{ margin: 0 }}>{order.address.village?.name}, {order.address.street}, {order.address.house}</p>
+              {order.address.landmark && <p style={{ margin: 0 }}>{order.address.landmark}</p>}
+            </>
+          )}
+          {order.contact_phone && <p style={{ margin: 0 }}>Aloqa: {order.contact_name} · {order.contact_phone}</p>}
           {order.note && (
             <>
               <div className="review-card-title" style={{ marginTop: 'var(--sp-4)' }}>Izoh</div>
@@ -111,6 +131,28 @@ export default function OrderDetail() {
             </>
           )}
         </div>
+
+        {!isSellerOfThisOrder && order.status === 'COMPLETED' && (
+          <div className="card review-card">
+            <div className="review-card-title">Do'konni baholang</div>
+            {order.review ? (
+              <>
+                <div className="star-picker">{[1, 2, 3, 4, 5].map((n) => <span key={n} style={{ color: n <= order.review.rating ? '#f5a623' : 'var(--color-line)' }}>★</span>)}</div>
+                {order.review.comment && <p style={{ margin: '8px 0 0' }}>{order.review.comment}</p>}
+              </>
+            ) : (
+              <>
+                <div className="star-picker">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button key={n} type="button" className={n <= stars ? 'on' : ''} onClick={() => setStars(n)} aria-label={`${n} yulduz`}>★</button>
+                  ))}
+                </div>
+                <textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Fikringiz (ixtiyoriy)" style={{ marginTop: 'var(--sp-3)' }} />
+                <button type="button" className="btn btn-primary btn-block" style={{ marginTop: 'var(--sp-3)' }} disabled={busy || !stars} onClick={submitReview}>Yuborish</button>
+              </>
+            )}
+          </div>
+        )}
 
         {!isSellerOfThisOrder && order.status === 'PENDING' && (
           <button className="btn btn-danger-outline btn-block" disabled={busy} onClick={() => setConfirmCancel(true)}>

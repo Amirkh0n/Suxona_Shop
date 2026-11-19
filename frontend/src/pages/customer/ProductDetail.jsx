@@ -115,7 +115,7 @@ export default function ProductDetail() {
             <BackIcon width={20} height={20} />
           </button>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button type="button" className="media-icon-btn" onClick={() => toggleFavorite(product.id)} aria-label="Sevimli">
+            <button type="button" className="media-icon-btn" onClick={async () => { if (!(await toggleFavorite(product.id))) navigate('/kirish', { state: { from: { pathname: `/mahsulot/${product.id}` } } }); }} aria-label="Sevimli">
               <HeartIcon filled={favorite} width={19} height={19} style={{ color: favorite ? 'var(--color-danger)' : undefined }} />
             </button>
             <button type="button" className="media-icon-btn" onClick={() => notify("Ulashish havolasi tez orada qo'shiladi.")} aria-label="Ulashish">
@@ -145,7 +145,11 @@ export default function ProductDetail() {
 
       <div className="product-detail-sheet container">
         <div className="product-detail-name">{product.name}</div>
-        <div className="product-detail-price">{formatSum(displayPrice)}</div>
+        <div className="product-detail-price">
+          {formatSum(displayPrice)}
+          {!variant && product.old_price && <span className="old-price">{formatSum(product.old_price)}</span>}
+          {!variant && product.discount_percent && <span className="discount-badge discount-badge-inline">-{product.discount_percent}%</span>}
+        </div>
 
         <div className="product-detail-store-row">
           {product.store && (
