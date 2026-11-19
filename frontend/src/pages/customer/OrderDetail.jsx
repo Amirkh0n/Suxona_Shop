@@ -137,7 +137,7 @@ export default function OrderDetail() {
             <div className="review-card-title">Do'konni baholang</div>
             {order.review ? (
               <>
-                <div className="star-picker">{[1, 2, 3, 4, 5].map((n) => <span key={n} style={{ color: n <= order.review.rating ? '#f5a623' : 'var(--color-line)' }}>★</span>)}</div>
+                <div className="star-picker">{[1, 2, 3, 4, 5].map((n) => <span key={n} style={{ color: n <= order.review.rating ? '#f5a623' : '#c9cfca' }}>★</span>)}</div>
                 {order.review.comment && <p style={{ margin: '8px 0 0' }}>{order.review.comment}</p>}
               </>
             ) : (
@@ -147,7 +147,9 @@ export default function OrderDetail() {
                     <button key={n} type="button" className={n <= stars ? 'on' : ''} onClick={() => setStars(n)} aria-label={`${n} yulduz`}>★</button>
                   ))}
                 </div>
-                <textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Fikringiz (ixtiyoriy)" style={{ marginTop: 'var(--sp-3)' }} />
+                <div className="field" style={{ marginTop: 'var(--sp-3)', marginBottom: 0 }}>
+                  <textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Fikringiz (ixtiyoriy)" />
+                </div>
                 <button type="button" className="btn btn-primary btn-block" style={{ marginTop: 'var(--sp-3)' }} disabled={busy || !stars} onClick={submitReview}>Yuborish</button>
               </>
             )}

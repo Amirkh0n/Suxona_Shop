@@ -749,7 +749,7 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 }
 
 /* --- Checkout --- */
-.checkout-step { padding: var(--sp-4) 0 calc(var(--sp-8) + 70px); }
+.checkout-step { padding-top: var(--sp-4); padding-bottom: calc(var(--sp-8) + 70px); }
 .checkout-section-label { font-size: var(--fs-xs); font-weight: 700; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--sp-3); }
 .option-card {
   display: flex; align-items: center; gap: var(--sp-3);
@@ -1043,7 +1043,8 @@ a.card:hover, button.card:hover { transform: translateY(-2px); box-shadow: var(-
 .store-fact { background: var(--color-surface-2, rgba(127,127,127,.12)); border-radius: 999px; padding: 4px 12px; font-size: var(--fs-sm); }
 .review-list-item { padding: var(--sp-3) 0; border-top: 1px solid var(--color-line); }
 .star-picker { display: flex; gap: 6px; font-size: 30px; line-height: 1; }
-.star-picker button { background: none; border: 0; cursor: pointer; padding: 0; color: var(--color-line); }
+.star-picker button { background: none; border: 0; cursor: pointer; padding: 0; color: #c9cfca; }
 .star-picker button.on { color: #f5a623; }
 .delivery-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-bottom: var(--sp-5); }
 .product-card-price .old-price { display: block; margin: 0; }
+.option-card-title, .option-card-sub { display: block; }
