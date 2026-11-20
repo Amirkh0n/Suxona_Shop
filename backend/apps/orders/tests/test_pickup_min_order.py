@@ -190,3 +190,27 @@ def test_seller_stats(user, shop):
     buyer = APIClient()
     buyer.force_authenticate(user)
     assert buyer.get("/api/v1/orders/store/stats").status_code in (403, 404)
+
+
+def test_order_admin_csv_export_neutralises_formulas(client, staff, user, shop):
+    store, product = shop
+    store.name = "=HYPERLINK(\"http://x\")"
+    store.save()
+    order = _completed_order(user, store, product)
+    client.force_login(staff)
+    r = client.post(
+        "/admin/orders/order/",
+        {"action": "export_csv", "_selected_action": [order.pk]},
+    )
+    assert r.status_code == 200 and r["Content-Type"].startswith("text/csv")
+    body = r.content.decode("utf-8-sig")
+    assert "'=HYPERLINK" in body and ",=HYPERLINK" not in body
+    assert "id,created_at" in body
+
+
+def test_admin_dashboard_and_order_page_render(client, staff, user, shop):
+    store, product = shop
+    order = _completed_order(user, store, product)
+    client.force_login(staff)
+    assert client.get("/admin/").status_code == 200
+    assert client.get(f"/admin/orders/order/{order.pk}/change/").status_code == 200

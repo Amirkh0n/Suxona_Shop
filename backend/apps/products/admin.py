@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.contrib import admin, messages
 from django.db.models import Count
 from django.http import HttpResponseRedirect
+from django.utils.html import format_html
 
 from apps.common.admin import (
     PRODUCT_STATUS_COLORS,
@@ -90,14 +91,30 @@ class ProductAdmin(admin.ModelAdmin):
         "name",
         "store",
         "category",
-        "price",
+        "price_display",
         "stock",
+        "rating_display",
         "status_badge",
         "image_count",
         "created_at",
     )
     list_display_links = ("name",)
-    list_filter = ("status", "category")
+
+    @admin.display(description="Narx", ordering="price")
+    def price_display(self, obj):
+        if obj.discount_percent:
+            return format_html(
+                "{} <s class='text-muted'>{}</s> <b class='text-danger'>-{}%</b>",
+                obj.price,
+                obj.old_price,
+                obj.discount_percent,
+            )
+        return obj.price
+
+    @admin.display(description="Reyting", ordering="rating_avg")
+    def rating_display(self, obj):
+        return f"★ {obj.rating_avg} ({obj.rating_count})" if obj.rating_count else "—"
+    list_filter = ("status", "category", "store")
     search_fields = ("name", "store__name")
     autocomplete_fields = ("store", "category")
     change_form_template = "admin/products/product/change_form.html"

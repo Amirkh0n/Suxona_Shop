@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib import admin
 from django.db.models import Count
 
-from apps.common.admin import ORDER_STATUS_COLORS, render_status_badge
+from apps.common.admin import ORDER_STATUS_COLORS, CsvExportMixin, render_status_badge
 from apps.orders.models import Cart, CartItem, Order, OrderItem, PromoCode, ReturnRequest
 
 
@@ -20,7 +20,20 @@ class OrderItemInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(CsvExportMixin, admin.ModelAdmin):
+    csv_fields = (
+        "id", "created_at", "status", "delivery_method", "customer_phone", "store_name",
+        "subtotal", "discount_amount", "delivery_price", "total",
+    )
+
+    @admin.display(description="Customer phone")
+    def customer_phone(self, obj):
+        return obj.customer.phone
+
+    @admin.display(description="Store")
+    def store_name(self, obj):
+        return obj.store.name
+
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
     list_per_page = 50
@@ -31,14 +44,15 @@ class OrderAdmin(admin.ModelAdmin):
         "customer",
         "store",
         "status_badge",
+        "delivery_method",
         "subtotal",
         "delivery_price",
         "total",
         "created_at",
     )
     list_display_links = ("id", "customer")
-    list_filter = ("status",)
-    search_fields = ("customer__phone", "store__name")
+    list_filter = ("status", "delivery_method", "store")
+    search_fields = ("customer__phone", "store__name", "contact_phone", "promo_code__code")
     autocomplete_fields = ("customer", "store")
     raw_id_fields = ("address",)
 
@@ -51,18 +65,32 @@ class OrderAdmin(admin.ModelAdmin):
         "address",
         "subtotal",
         "delivery_price",
+        "discount_amount",
+        "promo_code",
+        "delivery_method",
+        "contact_name",
+        "contact_phone",
+        "delivery_slot",
         "total",
         "created_at",
         "updated_at",
     )
 
     fieldsets = (
-        ("Customer", {"fields": ("customer", "address")}),
+        ("Customer", {"fields": ("customer", "contact_name", "contact_phone")}),
+        (
+            "Delivery",
+            {
+                "fields": (
+                    "delivery_method", "address", "delivery_slot", "courier_name", "courier_phone",
+                )
+            },
+        ),
         ("Store", {"fields": ("store",)}),
         ("Status", {"fields": ("status", "note")}),
         (
             "Financials",
-            {"fields": ("subtotal", "delivery_price", "total")},
+            {"fields": ("subtotal", "promo_code", "discount_amount", "delivery_price", "total")},
         ),
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
@@ -73,6 +101,7 @@ class OrderAdmin(admin.ModelAdmin):
         "mark_delivering",
         "mark_completed",
         "mark_cancelled",
+        "export_csv",
     )
 
     @admin.display(description="Status")
@@ -163,7 +192,8 @@ class CartAdmin(admin.ModelAdmin):
 
 
 @admin.register(PromoCode)
-class PromoCodeAdmin(admin.ModelAdmin):
+class PromoCodeAdmin(CsvExportMixin, admin.ModelAdmin):
+    csv_fields = ("code", "kind", "value", "used_count", "max_uses", "is_active", "valid_until")
     list_display = (
         "code", "kind", "value", "store", "used_count", "max_uses", "is_active", "valid_until",
     )
@@ -175,7 +205,11 @@ class PromoCodeAdmin(admin.ModelAdmin):
 
 @admin.register(ReturnRequest)
 class ReturnRequestAdmin(admin.ModelAdmin):
-    list_display = ("order", "status", "created_at")
+    list_display = ("order", "status", "reason_short", "created_at")
     list_filter = ("status",)
     raw_id_fields = ("order",)
     readonly_fields = ("created_at", "updated_at")
+
+    @admin.display(description="Reason")
+    def reason_short(self, obj):
+        return obj.reason[:60]

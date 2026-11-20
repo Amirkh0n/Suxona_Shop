@@ -34,17 +34,28 @@ class StoreAdmin(admin.ModelAdmin):
         "owner",
         "status_badge",
         "phone",
-        "telegram_username",
+        "rating_display",
         "created_at",
     )
-    list_filter = ("status",)
+    list_filter = ("status", "allows_pickup")
     search_fields = ("name", "owner__phone", "owner__first_name", "owner__last_name")
     autocomplete_fields = ("owner",)
-    readonly_fields = ("created_at", "updated_at", "logo_preview", "banner_preview")
+    readonly_fields = (
+        "created_at", "updated_at", "logo_preview", "banner_preview", "rating_avg", "rating_count",
+    )
 
     fieldsets = (
         (None, {"fields": ("owner", "name", "description", "status")}),
         ("Contact", {"fields": ("phone", "telegram_username")}),
+        (
+            "Buyurtma shartlari",
+            {
+                "fields": (
+                    "min_order_amount", "opens_at", "closes_at", "delivery_time", "allows_pickup",
+                )
+            },
+        ),
+        ("Reyting (avtomatik)", {"fields": ("rating_avg", "rating_count")}),
         ("Media", {"fields": ("logo", "logo_preview", "banner", "banner_preview")}),
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
@@ -55,6 +66,10 @@ class StoreAdmin(admin.ModelAdmin):
     @admin.display(description="Status")
     def status_badge(self, obj: Store) -> str:
         return render_status_badge(obj.status, STORE_STATUS_COLORS, obj.get_status_display())
+
+    @admin.display(description="Reyting")
+    def rating_display(self, obj: Store) -> str:
+        return f"★ {obj.rating_avg} ({obj.rating_count})" if obj.rating_count else "—"
 
     @admin.display(description="Logo")
     def logo_preview(self, obj: Store) -> str:

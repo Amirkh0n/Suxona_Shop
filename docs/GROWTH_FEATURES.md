@@ -36,3 +36,9 @@ orders promo/returns/courier). No new required env vars.
 ## Known limits
 - Open Graph tags are set client-side; link-preview crawlers that do not run JavaScript only see the static defaults in `index.html` (needs SSR/prerender to fix).
 - Payments are not implemented (cash only).
+
+## Admin improvements
+- Roles: `python manage.py setup_admin_roles` (idempotent; run on every deploy) creates groups **Moderator** (applications, products, reviews), **Support** (orders, returns, users – view), **Marketing** (banners, promo codes, categories), **Auditor** (view-only everywhere incl. audit log). Assign staff to a group in Admin → Groups.
+- "CSV ga yuklab olish" action on orders and promo codes (formula-injection safe, Excel-friendly UTF-8).
+- Orders: delivery method, contact, courier, promo/discount, filters by method and store; stores: order terms and rating; products: discount and rating columns.
+- Dashboard: pending returns, new reviews, top stores (30 days); sidebar icons for the new sections.

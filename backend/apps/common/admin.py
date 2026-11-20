@@ -7,6 +7,7 @@ no model registrations; it is safe for admin autodiscovery to import.
 
 from __future__ import annotations
 
+from django.contrib import admin
 from django.utils.html import format_html
 
 # --- Status badge colors -------------------------------------------------
@@ -94,3 +95,51 @@ def render_image_preview(image_field, max_height: int = 240) -> str:
         max_height,
     )
 
+
+
+# --- CSV export --------------------------------------------------------------
+
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe(value) -> str:
+    """Neutralise spreadsheet formulas (CSV injection): user-controlled text like a
+    store name ``=HYPERLINK(...)`` must not execute when an admin opens the file."""
+    text = "" if value is None else str(value)
+    return "'" + text if text.startswith(_FORMULA_PREFIXES) else text
+
+
+class CsvExportMixin:
+    """Adds an "Export selected as CSV" action. Set ``csv_fields`` on the ModelAdmin
+    (model field names or callables on the admin returning a value)."""
+
+    csv_fields: tuple[str, ...] = ()
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        # Only users who may view the data can export it.
+        if not self.has_view_permission(request):
+            actions.pop("export_csv", None)
+        return actions
+
+    @admin.action(description="Tanlanganlarni CSV ga yuklab olish")
+    def export_csv(self, request, queryset):
+        import csv
+
+        from django.http import HttpResponse
+
+        opts = self.model._meta
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{opts.model_name}.csv"'
+        response.write("﻿")  # BOM so Excel reads UTF-8 (Uzbek letters) correctly
+        writer = csv.writer(response)
+        writer.writerow(self.csv_fields)
+        for obj in queryset.iterator():
+            row = []
+            for name in self.csv_fields:
+                value = getattr(self, name)(obj) if hasattr(self, name) else getattr(obj, name)
+                row.append(_csv_safe(value))
+            writer.writerow(row)
+        return response
+
+    actions = ["export_csv"]

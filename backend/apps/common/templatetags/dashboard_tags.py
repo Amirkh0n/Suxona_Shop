@@ -16,8 +16,8 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.common.enums import OrderStatus, ProductStatus, StoreApplicationStatus, StoreStatus
-from apps.orders.models import Order
-from apps.products.models import Product
+from apps.orders.models import Order, ReturnRequest
+from apps.products.models import Product, ProductReview
 from apps.stores.models import Store, StoreApplication
 
 register = template.Library()
@@ -80,4 +80,16 @@ def dashboard_stats() -> dict:
             Order.objects.select_related("store", "customer").order_by("-created_at")[:8]
         ),
         "orders_chart": series,
+        "pending_returns": ReturnRequest.objects.filter(
+            status=ReturnRequest.Status.PENDING
+        ).count(),
+        "new_reviews_7d": ProductReview.objects.filter(
+            created_at__gte=now - timedelta(days=7)
+        ).count(),
+        "top_stores": list(
+            Order.objects.filter(status=OrderStatus.COMPLETED, created_at__gte=month_ago)
+            .values("store_id", "store__name")
+            .annotate(revenue=Sum("total"), orders=Count("id"))
+            .order_by("-revenue")[:5]
+        ),
     }

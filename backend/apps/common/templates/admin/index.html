@@ -35,6 +35,13 @@
       </a>
     </div>
     <div class="col-6 col-lg">
+      <a class="sx-kpi {% if s.pending_returns %}sx-kpi-warn{% endif %}"
+         href="{% url 'admin:orders_returnrequest_changelist' %}?status__exact=PENDING">
+        <span class="sx-kpi-icon"><i class="fas fa-undo"></i></span>
+        <span class="sx-kpi-body"><b>{{ s.pending_returns }}</b><small>Qaytarish so'rovlari · {{ s.new_reviews_7d }} yangi sharh</small></span>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
       <a class="sx-kpi {% if s.low_stock %}sx-kpi-warn{% endif %}"
          href="{% url 'admin:products_product_changelist' %}">
         <span class="sx-kpi-icon"><i class="fas fa-box-open"></i></span>
@@ -88,6 +95,24 @@
       </div>
     </div>
   </div>
+
+  {# --- top stores --------------------------------------------------------- #}
+  {% if s.top_stores %}
+  <div class="card">
+    <div class="card-header"><h5 class="m-0"><i class="fas fa-trophy mr-1 me-1"></i> Eng yaxshi do'konlar (30 kun)</h5></div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        {% for st in s.top_stores %}
+        <tr>
+          <td><a href="{% url 'admin:stores_store_change' st.store_id %}">{{ st.store__name }}</a></td>
+          <td class="text-muted">{{ st.orders }} ta buyurtma</td>
+          <td class="text-end text-right text-nowrap"><b>{{ st.revenue|floatformat:0 }}</b> so'm</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+  {% endif %}
 
   {# --- recent orders ------------------------------------------------------ #}
   <div class="card">
