@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 
+from apps.common.audit import record
 from apps.common.enums import OrderStatus
 from apps.notifications.inapp import create_notification
 from apps.orders.exceptions import (
@@ -55,6 +56,12 @@ class DecideReturnService:
         )
         request.seller_note = note
         request.save(update_fields=["status", "seller_note", "updated_at"])
+        record(
+            order.store.owner,
+            "return.approve" if approve else "return.reject",
+            order,
+            note,
+        )
         create_notification(
             order.customer, kind="return",
             title=f"Buyurtma #{order.pk}: qaytarish {'tasdiqlandi' if approve else 'rad etildi'}",

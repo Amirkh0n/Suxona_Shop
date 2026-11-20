@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.common.audit import record
 from apps.common.enums import ProductStatus
 from apps.notifications.telegram.services import after_commit, notify_seller_product_moderated
 from apps.products.exceptions import ProductNotFound, ProductNotPendingReviewError
@@ -36,6 +37,7 @@ class ApproveProductService:
                 "moderation_note", "updated_at",
             ]
         )
+        record(reviewed_by, "product.approve", locked, locked.name)
         after_commit(notify_seller_product_moderated, product_id=locked.pk)
         return locked
 
@@ -58,5 +60,6 @@ class RejectProductService:
                 "status", "reviewed_by", "reviewed_at", "moderation_note", "updated_at",
             ]
         )
+        record(reviewed_by, "product.reject", locked, f"{locked.name}: {note}")
         after_commit(notify_seller_product_moderated, product_id=locked.pk)
         return locked

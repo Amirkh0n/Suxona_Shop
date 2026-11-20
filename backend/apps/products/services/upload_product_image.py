@@ -11,6 +11,7 @@ from apps.products.exceptions import (
     ProductNotFound,
 )
 from apps.products.models import Product, ProductImage
+from apps.products.services.remoderation import send_back_to_review
 
 MAX_IMAGES_PER_PRODUCT = 5
 
@@ -70,6 +71,10 @@ class UploadProductImageService:
                 .get("value")
             )
             sort_order = 0 if current_max is None else current_max + 1
+
+        extra = send_back_to_review(locked, actor, "image added")
+        if extra:
+            locked.save(update_fields=[*extra, "updated_at"])
 
         return ProductImage.objects.create(
             product=locked,

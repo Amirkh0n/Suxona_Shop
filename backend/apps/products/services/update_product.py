@@ -17,6 +17,7 @@ from apps.products.exceptions import (
     ProductStatusForbiddenError,
 )
 from apps.products.models import Category, Product
+from apps.products.services.remoderation import MODERATED_FIELDS, send_back_to_review
 
 
 class UpdateProductService:
@@ -66,6 +67,7 @@ class UpdateProductService:
             raise NotProductOwnerError()
 
         update_fields: list[str] = []
+        before = {f: getattr(locked, f) for f in MODERATED_FIELDS}
 
         category_id = fields.get("category_id")
         if category_id is not None:
@@ -99,6 +101,13 @@ class UpdateProductService:
                     locked.moderation_note = ""
                     update_fields.append("moderation_note")
                     after_commit(notify_admins_product_review, product_id=locked.pk)
+
+        changed = [f for f in MODERATED_FIELDS if getattr(locked, f) != before[f]]
+        if changed and status_value is None:
+            # Seller edited approved content: it must be re-approved before it stays live.
+            update_fields += send_back_to_review(
+                locked, actor, f"edited: {', '.join(c.removesuffix('_id') for c in changed)}"
+            )
 
         if update_fields:
             update_fields.append("updated_at")

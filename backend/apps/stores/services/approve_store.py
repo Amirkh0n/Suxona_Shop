@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.common.audit import record
 from apps.common.enums import StoreApplicationStatus, StoreStatus
 from apps.notifications.telegram.services import (
     after_commit,
@@ -50,6 +51,8 @@ class ApproveStoreService:
         application.save(
             update_fields=["status", "reviewed_by", "reviewed_at", "updated_at"],
         )
+
+        record(reviewed_by, "store_application.approve", application, store.name)
 
         # Sent only once the transaction actually commits: if anything above
         # rolls back, the applicant must not get a "congratulations" message

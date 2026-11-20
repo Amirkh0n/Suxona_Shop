@@ -6,7 +6,8 @@ from apps.products.exceptions import (
     NotProductOwnerError,
     ProductImageNotFound,
 )
-from apps.products.models import ProductImage
+from apps.products.models import Product, ProductImage
+from apps.products.services.remoderation import send_back_to_review
 
 
 class DeleteProductImageService:
@@ -46,6 +47,11 @@ class DeleteProductImageService:
 
         was_primary = locked.is_primary
         locked.delete()
+
+        product = Product.objects.select_for_update().get(pk=product_id)
+        extra = send_back_to_review(product, actor, "image removed")
+        if extra:
+            product.save(update_fields=[*extra, "updated_at"])
 
         if was_primary:
             new_primary = remaining[0]

@@ -2,6 +2,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.common.audit import record
 from apps.common.enums import StoreApplicationStatus
 from apps.notifications.telegram.services import (
     after_commit,
@@ -46,6 +47,8 @@ class RejectStoreService:
                 "updated_at",
             ],
         )
+
+        record(reviewed_by, "store_application.reject", application, admin_note)
 
         # Sent only after commit so a rolled-back rejection never notifies.
         after_commit(

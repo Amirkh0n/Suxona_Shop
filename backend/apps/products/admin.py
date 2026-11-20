@@ -11,6 +11,7 @@ from apps.common.admin import (
     render_status_badge,
     render_thumbnail,
 )
+from apps.common.audit import record
 from apps.common.enums import ProductStatus
 from apps.products.models import (
     Category,
@@ -215,7 +216,16 @@ class ProductReviewAdmin(admin.ModelAdmin):
 
     def _toggle(self, request, queryset, hidden: bool):
         product_ids = set(queryset.values_list("product_id", flat=True))
+        first = queryset.first()
+        count = queryset.count()
         queryset.update(is_hidden=hidden)
+        if first is not None:
+            record(
+                request.user,
+                "review.hide" if hidden else "review.show",
+                first,
+                f"{count} review(s) on {len(product_ids)} product(s)",
+            )
         for pid in product_ids:
             refresh_product_rating(pid)
         self.message_user(request, f"{len(product_ids)} ta mahsulot reytingi yangilandi.")

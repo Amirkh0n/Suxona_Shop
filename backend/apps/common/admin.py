@@ -93,3 +93,4 @@ def render_image_preview(image_field, max_height: int = 240) -> str:
         image_field.url,
         max_height,
     )
+

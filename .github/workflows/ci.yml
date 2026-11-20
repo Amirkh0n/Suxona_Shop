@@ -8,24 +8,6 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: suxonashop
-          POSTGRES_USER: suxonashop
-          POSTGRES_PASSWORD: suxonashop
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U suxonashop" --health-interval 5s
-          --health-timeout 5s --health-retries 10
-    env:
-      DJANGO_SETTINGS_MODULE: config.settings.local
-      DJANGO_SECRET_KEY: ci-only
-      POSTGRES_HOST: localhost
-      POSTGRES_DB: suxonashop
-      POSTGRES_USER: suxonashop
-      POSTGRES_PASSWORD: suxonashop
     defaults:
       run:
         working-directory: backend
@@ -33,14 +15,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: pip
           cache-dependency-path: backend/requirements/*.txt
       - run: pip install -r requirements/local.txt
       - run: ruff check .
-      - run: python manage.py makemigrations --check --dry-run
-      - run: python manage.py check
-      - run: pytest -q
+      - name: Migrations are up to date
+        run: python manage.py makemigrations --check --dry-run
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.local
+      - run: python -m pytest -q
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.local
 
   frontend:
     runs-on: ubuntu-latest
@@ -56,4 +42,5 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
