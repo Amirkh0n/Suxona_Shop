@@ -57,6 +57,9 @@ export const storeApplicationApi = {
 export const productApi = {
   list: (params) => api.get('/products', { params }),
   retrieve: (id) => api.get(`/products/${id}`),
+  similar: (id) => api.get(`/products/${id}/similar`),
+  reviews: (id, params) => api.get(`/products/${id}/reviews`, { params }),
+  addReview: (id, payload) => api.post(`/products/${id}/reviews`, payload),
   create: (payload) => api.post('/products', payload),
   update: (id, payload) => api.patch(`/products/${id}`, payload),
   remove: (id) => api.delete(`/products/${id}`),
@@ -75,6 +78,27 @@ export const variantApi = {
   create: (productId, payload) => api.post(`/products/${productId}/variants`, payload),
   update: (variantId, payload) => api.patch(`/product-variants/${variantId}`, payload),
   remove: (variantId) => api.delete(`/product-variants/${variantId}`),
+};
+
+/* ---------- Notifications, promo, returns, stats ---------- */
+export const notificationApi = {
+  list: (params) => api.get('/notifications', { params }),
+  unreadCount: () => api.get('/notifications/unread-count'),
+  readAll: () => api.post('/notifications/read-all'),
+  read: (id) => api.post(`/notifications/${id}/read`),
+};
+
+export const promoApi = {
+  check: (storeId, code) => api.post('/promo/check', { store_id: storeId, code }),
+};
+
+export const returnApi = {
+  request: (orderId, reason) => api.post(`/orders/${orderId}/return`, { reason }),
+  decide: (orderId, approve, note) => api.post(`/orders/${orderId}/return/decide`, { approve, note }),
+};
+
+export const statsApi = {
+  seller: (days = 30) => api.get('/orders/store/stats', { params: { days } }),
 };
 
 /* ---------- Favorites ---------- */

@@ -6,12 +6,14 @@ import ProductCard from '../../components/ProductCard';
 import StoreCard from '../../components/StoreCard';
 import { ProductGridSkeleton, RowSkeleton } from '../../components/Skeleton';
 import { resolveImageUrl } from '../../utils/media';
+import { useI18n } from '../../i18n';
 import { GridIcon } from '../../components/Icons';
 
 const CHIP_TONES = ['chip-tone-a', 'chip-tone-b', 'chip-tone-c', 'chip-tone-d', 'chip-tone-e'];
 
 export default function Home() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [banners, setBanners] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoryTree, setCategoryTree] = useState(null);
@@ -102,8 +104,8 @@ export default function Home() {
       {sale.length > 0 && (
         <section style={{ marginTop: 'var(--sp-7)' }}>
           <div className="section-heading">
-            <h2>🔥 Chegirmalar</h2>
-            <Link to="/mahsulotlar?on_sale=true" className="section-heading-link">Barchasi</Link>
+            <h2>{t('home.sale')}</h2>
+            <Link to="/mahsulotlar?on_sale=true" className="section-heading-link">{t('home.all')}</Link>
           </div>
           <div className="grid grid-products">
             {sale.map((p) => <ProductCard key={p.id} product={p} />)}
@@ -113,8 +115,8 @@ export default function Home() {
 
       <section style={{ marginTop: 'var(--sp-7)' }}>
         <div className="section-heading">
-          <h2>Tavsiya etilgan do'konlar</h2>
-          <Link to="/mahsulotlar" className="section-heading-link">Barchasi</Link>
+          <h2>{t('home.stores')}</h2>
+          <Link to="/mahsulotlar" className="section-heading-link">{t('home.all')}</Link>
         </div>
         {stores.length === 0 ? (
           <div className="empty-state card"><h3>Hozircha do'konlar yo'q</h3></div>
@@ -127,8 +129,8 @@ export default function Home() {
 
       <section style={{ marginTop: 'var(--sp-7)' }}>
         <div className="section-heading">
-          <h2>Yangi mahsulotlar</h2>
-          <Link to="/mahsulotlar" className="section-heading-link">Barchasi</Link>
+          <h2>{t('home.new')}</h2>
+          <Link to="/mahsulotlar" className="section-heading-link">{t('home.all')}</Link>
         </div>
         {products.length === 0 ? (
           <div className="empty-state card"><h3>Hozircha mahsulot yo'q</h3></div>

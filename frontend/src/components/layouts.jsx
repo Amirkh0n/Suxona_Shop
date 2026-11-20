@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import BottomTabBar from './BottomTabBar';
+import OfflineBanner from './OfflineBanner';
 
 // Customer-facing routes are a mobile app UI (bottom tab bar, pill buttons,
 // fixed CTAs). On a wide desktop viewport that layout would otherwise
@@ -21,6 +22,7 @@ export function ShopLayout() {
       <div className="app-content">
         <Outlet />
       </div>
+      <OfflineBanner />
       <BottomTabBar />
     </AppShell>
   );
@@ -34,6 +36,7 @@ export function BareLayout() {
       <div className="app-content">
         <Outlet />
       </div>
+      <OfflineBanner />
       <BottomTabBar />
     </AppShell>
   );
