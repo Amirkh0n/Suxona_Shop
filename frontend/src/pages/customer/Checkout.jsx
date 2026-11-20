@@ -1,5 +1,7 @@
 import { linePrice, variantLabel, availableStock } from '../../utils/variants';
 import { useEffect, useRef, useState } from 'react';
+import { promoApi } from '../../api/endpoints';
+import { extractErrorMessage as promoError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addressApi, orderApi, productApi, storeApi, villageApi } from '../../api/endpoints';
@@ -26,6 +28,10 @@ export default function Checkout() {
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [addressId, setAddressId] = useState('');
   const [note, setNote] = useState('');
+  const [slot, setSlot] = useState('');
+  const [promoInput, setPromoInput] = useState('');
+  const [promo, setPromo] = useState(null); // { code, discount }
+  const [promoMsg, setPromoMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [checkingStock, setCheckingStock] = useState(false);
@@ -63,7 +69,19 @@ export default function Checkout() {
   const minOrder = Number(store?.min_order_amount || 0);
   const belowMin = subtotal < minOrder;
   const deliveryEstimate = pickup ? 0 : matchedZone ? Number(matchedZone.delivery_price) : null;
-  const totalEstimate = deliveryEstimate != null ? subtotal + deliveryEstimate : null;
+  const discount = promo ? Number(promo.discount) : 0;
+  const totalEstimate = deliveryEstimate != null ? subtotal - discount + deliveryEstimate : null;
+
+  const applyPromo = async () => {
+    setPromoMsg('');
+    try {
+      const { data } = await promoApi.check(Number(storeId), promoInput.trim());
+      setPromo(data);
+    } catch (err) {
+      setPromo(null);
+      setPromoMsg(promoError(err, 'Promokod yaroqsiz.'));
+    }
+  };
 
   // The cart was fetched when the shopper first added items, possibly
   // minutes or hours before checkout — another buyer could have taken the
@@ -130,7 +148,7 @@ export default function Checkout() {
     if (!ok) return;
     setSubmitting(true);
     try {
-      const sig = `${storeId}|${method}|${pickup ? '' : addressId}|${contactName}|${contactPhone}|${note || ''}`;
+      const sig = `${storeId}|${method}|${pickup ? '' : addressId}|${contactName}|${contactPhone}|${slot}|${promo?.code || ''}|${note || ''}`;
       const { data } = await orderApi.create(
         {
           store_id: Number(storeId),
@@ -139,6 +157,8 @@ export default function Checkout() {
           contact_name: contactName.trim(),
           contact_phone: contactPhone.trim(),
           note: note || undefined,
+          delivery_slot: slot || undefined,
+          promo_code: promo?.code || undefined,
         },
         idempotencyKeyFor(sig)
       );
@@ -242,6 +262,26 @@ export default function Checkout() {
 
           </>)}
 
+          {!pickup && (
+            <div className="field" style={{ marginTop: 'var(--sp-5)' }}>
+              <label htmlFor="slot">Qulay vaqt (ixtiyoriy)</label>
+              <select id="slot" value={slot} onChange={(e) => setSlot(e.target.value)}>
+                <option value="">Imkon qadar tezroq</option>
+                {['09:00-12:00', '12:00-15:00', '15:00-18:00', '18:00-21:00'].map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div className="field">
+            <label htmlFor="promo">Promokod</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input id="promo" value={promoInput} onChange={(e) => { setPromoInput(e.target.value); setPromo(null); }} placeholder="Masalan: WELCOME10" />
+              <button type="button" className="btn btn-outline" onClick={applyPromo} disabled={!promoInput.trim()}>Qo'llash</button>
+            </div>
+            {promo && <small style={{ color: 'var(--color-primary)' }}>-{formatSum(promo.discount)} chegirma qo'llandi</small>}
+            {promoMsg && <small style={{ color: 'var(--color-danger)' }}>{promoMsg}</small>}
+          </div>
+
           <div className="field" style={{ marginTop: 'var(--sp-5)' }}>
             <label htmlFor="note">Izoh (ixtiyoriy)</label>
             <textarea id="note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Kuryerga izoh, masalan: darvoza rangi..." />
@@ -281,6 +321,7 @@ export default function Checkout() {
 
           <div className="card review-card">
             <div className="review-item-row"><span className="muted">Mahsulotlar summasi</span><span>{formatSum(subtotal)}</span></div>
+            {discount > 0 && <div className="review-item-row"><span className="muted">Promokod ({promo.code})</span><span>-{formatSum(discount)}</span></div>}
             <div className="review-item-row">
               <span className="muted">Yetkazib berish</span>
               <span>{pickup ? 'Bepul' : deliveryEstimate != null ? formatSum(deliveryEstimate) : 'Tasdiqlashda'}</span>

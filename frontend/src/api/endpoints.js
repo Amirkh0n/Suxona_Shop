@@ -147,7 +147,7 @@ export const orderApi = {
   storeOrders: (params) => api.get('/orders/store', { params }),
   accept: (id) => api.post(`/orders/${id}/accept`),
   reject: (id, reason) => api.post(`/orders/${id}/reject`, { reason }),
-  delivering: (id) => api.post(`/orders/${id}/delivering`),
+  delivering: (id, courier) => api.post(`/orders/${id}/delivering`, courier || {}),
   complete: (id) => api.post(`/orders/${id}/complete`),
   cancel: (id) => api.post(`/orders/${id}/cancel`),
 };

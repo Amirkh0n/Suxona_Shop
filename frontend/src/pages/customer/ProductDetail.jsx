@@ -10,6 +10,8 @@ import { formatSum, PRODUCT_STATUS_LABELS } from '../../utils/format';
 import { availableStock, variantLabel } from '../../utils/variants';
 import { resolveImageUrl } from '../../utils/media';
 import { PageSpinner } from '../../components/Spinner';
+import ProductReviews from '../../components/ProductReviews';
+import SimilarProducts from '../../components/SimilarProducts';
 import QuantityStepper from '../../components/QuantityStepper';
 import { BackIcon, HeartIcon, ShareIcon, StarIcon, ChevronRightIcon } from '../../components/Icons';
 
@@ -73,6 +75,14 @@ export default function ProductDetail() {
     (hasVariants ? !variant || variant.stock === 0 : product.stock === 0);
   const favorite = isFavorite(product.id);
 
+  const shareProduct = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: product.name, url });
+      else { await navigator.clipboard.writeText(url); notify('Havola nusxalandi'); }
+    } catch { /* user cancelled */ }
+  };
+
   const showPrev = () => setActiveImage((i) => (i === 0 ? images.length - 1 : i - 1));
   const showNext = () => setActiveImage((i) => (i === images.length - 1 ? 0 : i + 1));
 
@@ -118,7 +128,7 @@ export default function ProductDetail() {
             <button type="button" className="media-icon-btn" onClick={async () => { if (!(await toggleFavorite(product.id))) navigate('/kirish', { state: { from: { pathname: `/mahsulot/${product.id}` } } }); }} aria-label="Sevimli">
               <HeartIcon filled={favorite} width={19} height={19} style={{ color: favorite ? 'var(--color-danger)' : undefined }} />
             </button>
-            <button type="button" className="media-icon-btn" onClick={() => notify("Ulashish havolasi tez orada qo'shiladi.")} aria-label="Ulashish">
+            <button type="button" className="media-icon-btn" onClick={shareProduct} aria-label="Ulashish">
               <ShareIcon width={19} height={19} />
             </button>
           </div>
@@ -158,9 +168,9 @@ export default function ProductDetail() {
               <span>{product.store.name}</span>
             </Link>
           )}
-          <span className="product-detail-rating" title="Bu mahsulot uchun hali sharhlar yo'q">
-            <StarIcon width={14} height={14} />
-            Reyting yo'q
+          <span className="product-detail-rating">
+            <StarIcon width={14} height={14} />{' '}
+            {product.rating_count > 0 ? `${Number(product.rating_avg).toFixed(1)} (${product.rating_count})` : "Reyting yo'q"}
           </span>
         </div>
 
@@ -199,6 +209,12 @@ export default function ProductDetail() {
             <p style={{ color: 'var(--color-ink)' }}>{product.description}</p>
           </div>
         )}
+
+        <ProductReviews
+          productId={product.id}
+          onChanged={() => productApi.retrieve(product.id).then(({ data }) => setProduct(data)).catch(() => {})}
+        />
+        <SimilarProducts productId={product.id} />
       </div>
 
       {error && <div className="container"><div className="alert alert-error">{error}</div></div>}

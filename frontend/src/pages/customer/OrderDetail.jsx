@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { variantLabel } from '../../utils/variants';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useNavigate, useParams } from 'react-router-dom';
-import { orderApi } from '../../api/endpoints';
+import { orderApi, returnApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate, formatSum } from '../../utils/format';
 import { resolveImageUrl } from '../../utils/media';
@@ -23,6 +23,10 @@ export default function OrderDetail() {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState('');
   const [stars, setStars] = useState(0);
+  const [courierName, setCourierName] = useState('');
+  const [courierPhone, setCourierPhone] = useState('');
+  const [returnReason, setReturnReason] = useState('');
+  const [returnOpen, setReturnOpen] = useState(false);
   const [comment, setComment] = useState('');
 
   const load = () => orderApi.retrieve(orderId).then(({ data }) => setOrder(data));
@@ -40,7 +44,10 @@ export default function OrderDetail() {
     setBusy(true);
     try {
       if (action === 'accept') await orderApi.accept(orderId);
-      if (action === 'delivering') await orderApi.delivering(orderId);
+      if (action === 'delivering') await orderApi.delivering(orderId, { courier_name: courierName, courier_phone: courierPhone });
+      if (action === 'return') await returnApi.request(orderId, returnReason);
+      if (action === 'return_approve') await returnApi.decide(orderId, true, payload || '');
+      if (action === 'return_reject') await returnApi.decide(orderId, false, payload || '');
       if (action === 'complete') await orderApi.complete(orderId);
       if (action === 'cancel') await orderApi.cancel(orderId);
       if (action === 'reject') await orderApi.reject(orderId, payload || 'Sotuvchi tomonidan rad etildi');
@@ -103,6 +110,9 @@ export default function OrderDetail() {
             </div>
           ))}
           <div className="review-item-row" style={{ marginTop: 'var(--sp-3)' }}><span className="muted">Mahsulotlar</span><span>{formatSum(order.subtotal)}</span></div>
+          {Number(order.discount_amount) > 0 && (
+            <div className="review-item-row"><span className="muted">Promokod {order.promo_code_text}</span><span>-{formatSum(order.discount_amount)}</span></div>
+          )}
           <div className="review-item-row"><span className="muted">Yetkazib berish</span><span>{formatSum(order.delivery_price)}</span></div>
           <div className="review-item-row" style={{ fontWeight: 800, borderTop: '1px solid var(--color-line)', marginTop: 4, paddingTop: 10 }}>
             <span>Jami</span><span>{formatSum(order.total)}</span>
@@ -117,6 +127,8 @@ export default function OrderDetail() {
               {order.address.landmark && <p style={{ margin: 0 }}>{order.address.landmark}</p>}
             </>
           )}
+          {order.delivery_slot && <p style={{ margin: 0 }}>Vaqt: {order.delivery_slot}</p>}
+          {order.courier_name && <p style={{ margin: 0 }}>Kuryer: {order.courier_name}{order.courier_phone ? ` · ${order.courier_phone}` : ''}</p>}
           {order.contact_phone && <p style={{ margin: 0 }}>Aloqa: {order.contact_name} · {order.contact_phone}</p>}
           {order.note && (
             <>
@@ -156,6 +168,36 @@ export default function OrderDetail() {
           </div>
         )}
 
+        {order.return_request && (
+          <div className="card review-card">
+            <div className="review-card-title">Qaytarish so'rovi: {{ PENDING: 'ko\'rib chiqilmoqda', APPROVED: 'tasdiqlandi', REJECTED: 'rad etildi' }[order.return_request.status]}</div>
+            <p style={{ margin: 0 }}>{order.return_request.reason}</p>
+            {order.return_request.seller_note && <p className="muted" style={{ margin: '4px 0 0' }}>Sotuvchi: {order.return_request.seller_note}</p>}
+            {isSellerOfThisOrder && order.return_request.status === 'PENDING' && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 'var(--sp-3)' }}>
+                <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy} onClick={() => runAction('return_approve')}>Tasdiqlash</button>
+                <button className="btn btn-outline" style={{ flex: 1 }} disabled={busy} onClick={() => runAction('return_reject', 'Qaytarish mumkin emas')}>Rad etish</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isSellerOfThisOrder && order.status === 'COMPLETED' && !order.return_request && (
+          <div className="card review-card">
+            {returnOpen ? (
+              <>
+                <div className="review-card-title">Qaytarish sababi</div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <textarea rows={3} value={returnReason} onChange={(e) => setReturnReason(e.target.value)} placeholder="Nima sababdan qaytarmoqchisiz?" />
+                </div>
+                <button className="btn btn-primary btn-block" style={{ marginTop: 'var(--sp-3)' }} disabled={busy || !returnReason.trim()} onClick={() => runAction('return')}>Yuborish</button>
+              </>
+            ) : (
+              <button type="button" className="btn btn-outline btn-block" onClick={() => setReturnOpen(true)}>Mahsulotni qaytarish (7 kun ichida)</button>
+            )}
+          </div>
+        )}
+
         {!isSellerOfThisOrder && order.status === 'PENDING' && (
           <button className="btn btn-danger-outline btn-block" disabled={busy} onClick={() => setConfirmCancel(true)}>
             Buyurtmani bekor qilish
@@ -187,6 +229,12 @@ export default function OrderDetail() {
             )}
             {order.status === 'ACCEPTED' && (
               <>
+                {order.delivery_method !== 'PICKUP' && (
+                  <div style={{ display: 'flex', gap: 8, flexBasis: '100%' }}>
+                    <input value={courierName} onChange={(e) => setCourierName(e.target.value)} placeholder="Kuryer ismi (ixtiyoriy)" />
+                    <input type="tel" value={courierPhone} onChange={(e) => setCourierPhone(e.target.value)} placeholder="Kuryer telefoni" />
+                  </div>
+                )}
                 <button className="btn btn-primary" style={{ flex: 1 }} disabled={busy} onClick={() => runAction('delivering')}>Yetkazishga chiqarish</button>
                 <button className="btn btn-danger-outline" style={{ flex: 1 }} disabled={busy} onClick={() => setConfirmCancel(true)}>Bekor qilish</button>
               </>
