@@ -263,6 +263,10 @@ class MyProductsView(PaginatedAPIView):
 
     @extend_schema(
         summary="List my store's products (seller)",
+        parameters=[
+            OpenApiParameter("search", str, description="Search by name."),
+            OpenApiParameter("status", str, description="Filter by product status."),
+        ],
         responses={
             200: ProductListSerializer(many=True),
             404: OpenApiResponse(DetailSerializer, "Store not found."),
@@ -278,4 +282,10 @@ class MyProductsView(PaginatedAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         products = ProductSelector.get_store_products(store.id)
+        search = request.query_params.get("search", "").strip()
+        if search:
+            products = products.filter(name__icontains=search)
+        status_filter = request.query_params.get("status")
+        if status_filter in ProductStatus.values:
+            products = products.filter(status=status_filter)
         return self.paginate(products, ProductListSerializer, request)

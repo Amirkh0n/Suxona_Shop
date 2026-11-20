@@ -134,3 +134,15 @@ def test_product_review_requires_purchase_and_updates_rating(user, shop):
     assert APIClient().get(url).data["count"] == 1
     best = APIClient().get("/api/v1/products?ordering=rating").data["results"][0]
     assert best["id"] == product.pk and best["rating_count"] == 1
+
+
+def test_my_products_search_and_status_filter(shop):
+    store, plov = shop
+    hidden = _make(store, plov.category, "Lagmon", 12)
+    hidden.status = "HIDDEN"
+    hidden.save()
+    c = APIClient()
+    c.force_authenticate(store.owner)
+    assert c.get("/api/v1/products/my?search=lag").data["count"] == 1
+    assert c.get("/api/v1/products/my?status=ACTIVE").data["count"] == 1
+    assert c.get("/api/v1/products/my").data["count"] == 2

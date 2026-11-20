@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { categoryApi, productApi, storeApi } from '../../api/endpoints';
 import ProductCard from '../../components/ProductCard';
 import { ProductGridSkeleton } from '../../components/Skeleton';
+import usePageMeta from '../../utils/usePageMeta';
 import { formatSum } from '../../utils/format';
 import { resolveImageUrl } from '../../utils/media';
 import { BackIcon, StarIcon, TelegramIcon } from '../../components/Icons';
@@ -49,6 +50,8 @@ export default function StoreDetail() {
   }, [products]);
 
   const filteredProducts = activeCategory ? products.filter((p) => p.category_id === activeCategory) : products;
+
+  usePageMeta({ title: store?.name, description: store?.description?.slice(0, 160) });
 
   if (loading) {
     return (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orderApi, productApi } from '../../api/endpoints';
+import { orderApi, productApi, statsApi } from '../../api/endpoints';
+import BarChart from '../../components/BarChart';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate, formatSum, isSameDay } from '../../utils/format';
 import { PageSpinner } from '../../components/Spinner';
@@ -11,6 +12,8 @@ export default function SellerDashboard() {
   const [orders, setOrders] = useState([]);
   const [productCount, setProductCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [days, setDays] = useState(30);
+  const [serverStats, setServerStats] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -21,6 +24,10 @@ export default function SellerDashboard() {
       setProductCount(productsRes.data?.count ?? (productsRes.data?.results || []).length);
     }).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    statsApi.seller(days).then(({ data }) => setServerStats(data)).catch(() => setServerStats(null));
+  }, [days]);
 
   const stats = useMemo(() => {
     const today = orders.filter((o) => isSameDay(o.created_at));
@@ -69,6 +76,37 @@ export default function SellerDashboard() {
           <div className="stat-tile-value">{orders.length}</div>
         </div>
       </div>
+
+      {serverStats && (
+        <div className="card" style={{ marginBottom: 'var(--sp-5)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-3)' }}>
+            <strong>Savdo ({days} kun)</strong>
+            <span style={{ display: 'flex', gap: 6 }}>
+              {[7, 30, 90].map((d) => (
+                <button key={d} type="button" className={`btn btn-sm ${days === d ? 'btn-primary' : 'btn-outline'}`} onClick={() => setDays(d)}>{d}</button>
+              ))}
+            </span>
+          </div>
+          <div style={{ fontSize: 'var(--fs-lg, 20px)', fontWeight: 800 }}>{formatSum(serverStats.revenue)}</div>
+          <div className="muted" style={{ marginBottom: 'var(--sp-3)' }}>
+            {serverStats.orders_completed} ta yakunlangan · o'rtacha chek {formatSum(serverStats.average_order)}
+          </div>
+          <BarChart
+            data={serverStats.daily.map((d) => ({ label: d.date, value: Number(d.revenue) }))}
+            format={formatSum}
+          />
+          {serverStats.top_products.length > 0 && (
+            <>
+              <div className="variant-label" style={{ margin: 'var(--sp-4) 0 var(--sp-2)' }}>Eng ko'p sotilganlar</div>
+              {serverStats.top_products.map((p) => (
+                <div key={p.product_id} className="review-item-row">
+                  <span>{p.name}</span><span className="muted">{p.quantity} dona</span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="section-heading">
         <h2>Yangi buyurtmalar</h2>

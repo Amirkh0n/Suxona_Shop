@@ -9,6 +9,7 @@ import { usePreviewNotice } from '../../context/PreviewNoticeContext';
 import { formatSum, PRODUCT_STATUS_LABELS } from '../../utils/format';
 import { availableStock, variantLabel } from '../../utils/variants';
 import { resolveImageUrl } from '../../utils/media';
+import usePageMeta from '../../utils/usePageMeta';
 import { PageSpinner } from '../../components/Spinner';
 import ProductReviews from '../../components/ProductReviews';
 import SimilarProducts from '../../components/SimilarProducts';
@@ -50,6 +51,12 @@ export default function ProductDetail() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [productId]);
+
+  usePageMeta({
+    title: product?.name,
+    description: product?.description?.slice(0, 160),
+    image: product?.images?.[0] ? resolveImageUrl(product.images[0].image) : undefined,
+  });
 
   if (loading) return <PageSpinner />;
 
