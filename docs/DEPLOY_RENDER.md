@@ -61,7 +61,7 @@ Env o'zgarsa frontendni qayta build qiling.
 
 ## Lokal (Docker Compose)
 ```
-cp .env.example .env     # DJANGO_SECRET_KEY ni to'ldiring
+cp backend/.env.example backend/.env     # DJANGO_SECRET_KEY ni to'ldiring
 docker compose up --build
 ```
 API `http://localhost:8000`, admin `/admin/`. R2 sozlanmasa, rasmlar docker volume'ga yoziladi va Django o'zi beradi.

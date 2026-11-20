@@ -5,7 +5,7 @@ Mahalliy do'konlar uchun marketplace: Django REST backend + React (Vite) fronten
 ## Tezkor ishga tushirish (Docker)
 
 ```bash
-cp .env.example .env        # qiymatlarni to'ldiring (SECRET_KEY, TELEGRAM_BOT_TOKEN, ...)
+cp backend/.env.example backend/.env   # qiymatlarni to'ldiring (SECRET_KEY, TELEGRAM_BOT_TOKEN, ...)
 docker compose up --build   # backend :8000 + db
 docker compose exec backend uv run python manage.py createsuperuser
 ```
@@ -19,7 +19,7 @@ docker compose exec backend uv run python manage.py createsuperuser
 Bot alohida jarayon emas: Telegram yangilanishlarni `POST /api/v1/telegram/webhook` ga
 yuboradi, Django ularni shu so'rov ichida sinxron qayta ishlaydi.
 
-1. `.env`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` (tasodifiy uzun qator),
+1. `backend/.env`: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` (tasodifiy uzun qator),
    `SITE_BASE_URL=https://api.sizning-domen.uz`, `FRONTEND_BASE_URL=https://sizning-domen.uz`,
    ixtiyoriy `TELEGRAM_ADMIN_CHAT_ID` (yangi arizalar haqida xabar oladigan chat/guruh).
 2. Deploy'dan keyin bir marta: `python manage.py set_telegram_webhook`
@@ -31,12 +31,14 @@ yuboradi, Django ularni shu so'rov ichida sinxron qayta ishlaydi.
 ## Lokal (Docker'siz)
 
 ```bash
-cd backend && uv sync && cp .env.example .env   # POSTGRES_HOST=localhost
+cd backend && uv sync && cp .env.example .env   # DB: bo'sh qoldirsangiz SQLite
 uv run python manage.py migrate && uv run python manage.py runserver
 uv run python manage.py set_telegram_webhook   # https tunnel kerak (ngrok)
 uv run pytest
 ```
 
-Frontend: `cd frontend && npm ci && npm run dev`.
+Frontend: `cd frontend && cp .env.example .env && npm ci && npm run dev`.
+
+**Env fayllar ikkita:** `backend/.env` (Django, Telegram, DB, R2) va `frontend/.env` (`VITE_*`). Namunalar: `backend/.env.example`, `frontend/.env.example`.
 
 Reja va holat: [docs/IMPROVEMENT_PLAN.md](docs/IMPROVEMENT_PLAN.md).

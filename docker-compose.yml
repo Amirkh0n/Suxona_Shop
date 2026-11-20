@@ -1,5 +1,5 @@
 # Local stack that mirrors production: Postgres + the API image.
-#   cp .env.example .env     (fill in values; DJANGO_SECRET_KEY is required)
+#   cp backend/.env.example backend/.env     (fill in values; DJANGO_SECRET_KEY is required)
 #   docker compose up --build
 # API:  http://localhost:8000   Admin: http://localhost:8000/admin/   Health: /healthz
 # The frontend is deployed separately (Cloudflare); run it with `npm run dev` in ./frontend.
@@ -9,7 +9,7 @@ services:
       context: .
       dockerfile: docker/backend/Dockerfile
     env_file:
-      - .env
+      - backend/.env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
       POSTGRES_HOST: db
