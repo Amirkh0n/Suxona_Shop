@@ -20,6 +20,9 @@ dependencies = [
     "requests>=2.32",
     "django-jazzmin>=3.0",
     "whitenoise>=6.7",
+    "dj-database-url>=2.2",
+    "sentry-sdk[django]>=2.0",
+    "redis>=5.0",
 ]
 
 [dependency-groups]

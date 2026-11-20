@@ -1,0 +1,58 @@
+# Render Blueprint: backend API + Postgres. The frontend is hosted on Cloudflare.
+# Dashboard -> New -> Blueprint -> pick this repo. Fill the `sync: false` values when asked.
+databases:
+  - name: suxonashop-db
+    plan: free            # free Postgres expires after 30 days; use "basic-256mb" for real use
+    databaseName: suxonashop
+    user: suxonashop
+
+services:
+  - type: web
+    name: suxonashop-api
+    runtime: docker
+    dockerfilePath: ./docker/backend/Dockerfile
+    dockerContext: .
+    plan: free            # free instances sleep after 15 min idle; use "starter" for real use
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: suxonashop-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      # Your Cloudflare site, e.g. https://suxonashop.pages.dev (no trailing slash)
+      - key: DJANGO_CORS_ALLOWED_ORIGINS
+        sync: false
+      # This service's own public URL, e.g. https://suxonashop-api.onrender.com
+      - key: SITE_BASE_URL
+        sync: false
+      # Same as DJANGO_CORS_ALLOWED_ORIGINS (used in Telegram message links)
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: TELEGRAM_ADMIN_CHAT_ID
+        sync: false
+      - key: SET_TELEGRAM_WEBHOOK
+        value: "true"
+      # Uploaded images: Cloudflare R2 (Render's disk is wiped on every deploy).
+      - key: CLOUDFLARE_R2_BUCKET_NAME
+        sync: false
+      - key: CLOUDFLARE_R2_ACCESS_KEY_ID
+        sync: false
+      - key: CLOUDFLARE_R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: CLOUDFLARE_R2_ENDPOINT_URL
+        sync: false
+      - key: CLOUDFLARE_R2_PUBLIC_URL
+        sync: false
+      - key: WEB_CONCURRENCY
+        value: "2"
