@@ -25,6 +25,8 @@ class StoreReview(BaseModel):
     )
     rating = models.PositiveSmallIntegerField()
     comment = models.TextField(blank=True)
+    seller_reply = models.TextField(blank=True)
+    seller_replied_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Do'kon bahosi"

@@ -55,12 +55,16 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         return StoreReviewSerializer(review).data if review else None
     items = OrderItemSerializer(many=True, read_only=True)
     promo_code_text = serializers.SerializerMethodField()
+    timeline = serializers.SerializerMethodField()
     return_request = serializers.SerializerMethodField()
 
     @extend_schema_field(ReturnRequestSerializer(allow_null=True))
     def get_return_request(self, obj):
         rr = getattr(obj, "return_request", None)
         return ReturnRequestSerializer(rr).data if rr else None
+
+    def get_timeline(self, obj) -> list[dict]:
+        return [{"status": e.status, "at": e.created_at} for e in obj.events.all()]
 
     def get_promo_code_text(self, obj) -> str:
         return obj.promo_code.code if obj.promo_code_id else ""
@@ -88,6 +92,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             "items",
             "review",
             "return_request",
+            "timeline",
             "created_at",
             "updated_at",
         ]

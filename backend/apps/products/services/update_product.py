@@ -33,7 +33,7 @@ class UpdateProductService:
       hide/show it freely (approved_at stays set).
     """
 
-    SCALAR_FIELDS = ("name", "description", "price", "stock")
+    SCALAR_FIELDS = ("name", "description", "price", "stock", "sku", "low_stock_threshold")
 
     @staticmethod
     def _check_seller_status(product: Product, target: str) -> None:

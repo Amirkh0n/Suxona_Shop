@@ -20,12 +20,26 @@ class StoreListSerializer(serializers.ModelSerializer):
             "min_order_amount",
             "delivery_time",
             "allows_pickup",
+            "opens_at",
+            "closes_at",
+            "is_open",
+            "latitude",
+            "longitude",
+            "distance_km",
         ]
         read_only_fields = fields
+
+    distance_km = serializers.SerializerMethodField()
+    is_open = serializers.BooleanField(read_only=True, allow_null=True)
+
+    def get_distance_km(self, obj) -> float | None:
+        value = getattr(obj, "distance_km", None)
+        return None if value is None else round(value, 1)
 
 
 class StoreDetailSerializer(serializers.ModelSerializer):
     owner = UserCompactSerializer(read_only=True)
+    is_open = serializers.BooleanField(read_only=True, allow_null=True)
 
     class Meta:
         model = Store
@@ -46,6 +60,9 @@ class StoreDetailSerializer(serializers.ModelSerializer):
             "closes_at",
             "delivery_time",
             "allows_pickup",
+            "is_open",
+            "latitude",
+            "longitude",
             "created_at",
             "updated_at",
         ]
@@ -70,6 +87,17 @@ class StoreUpdateSerializer(serializers.Serializer):
     closes_at = serializers.TimeField(required=False, allow_null=True)
     delivery_time = serializers.CharField(max_length=60, required=False, allow_blank=True)
     allows_pickup = serializers.BooleanField(required=False)
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, min_value=-90, max_value=90, required=False, allow_null=True
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        min_value=-180,
+        max_value=180,
+        required=False,
+        allow_null=True,
+    )
 
 
 class StoreReviewSerializer(serializers.ModelSerializer):
@@ -81,7 +109,10 @@ class StoreReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StoreReview
-        fields = ["id", "rating", "comment", "customer_name", "created_at"]
+        fields = [
+            "id", "rating", "comment", "customer_name", "created_at",
+            "seller_reply", "seller_replied_at",
+        ]
         read_only_fields = fields
 
 

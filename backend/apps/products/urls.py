@@ -7,15 +7,20 @@ from apps.products.views import (
     FavoriteListView,
     FavoriteToggleView,
     MyProductsView,
+    ProductCsvExportView,
+    ProductCsvImportView,
     ProductDetailView,
     ProductImageDeleteView,
     ProductImageListUploadView,
     ProductImageReorderView,
     ProductListCreateView,
     ProductReviewListCreateView,
+    ProductReviewReplyView,
     ProductVariantDetailView,
     ProductVariantListCreateView,
     SimilarProductsView,
+    StockAlertIdsView,
+    StockAlertView,
 )
 
 app_name = "products"
@@ -32,6 +37,19 @@ urlpatterns = [
     # Products
     path("products", ProductListCreateView.as_view(), name="product-list"),
     path("products/my", MyProductsView.as_view(), name="product-my"),
+    path("products/my/export", ProductCsvExportView.as_view(), name="product-export"),
+    path("products/my/import", ProductCsvImportView.as_view(), name="product-import"),
+    path("products/stock-alerts", StockAlertIdsView.as_view(), name="stock-alert-ids"),
+    path(
+        "products/<int:product_id>/notify-stock",
+        StockAlertView.as_view(),
+        name="stock-alert",
+    ),
+    path(
+        "product-reviews/<int:review_id>/reply",
+        ProductReviewReplyView.as_view(),
+        name="product-review-reply",
+    ),
     path(
         "products/<int:product_id>",
         ProductDetailView.as_view(),

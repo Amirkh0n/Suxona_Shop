@@ -31,6 +31,9 @@ class Store(BaseModel):
     delivery_time = models.CharField(
         max_length=60, blank=True, help_text='Free text, e.g. "1-2 kun".'
     )
+    # Optional map position; enables "nearby stores" sorting.
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     allows_pickup = models.BooleanField(
         default=False, help_text="Customers may collect orders at the store."
     )
@@ -53,6 +56,18 @@ class Store(BaseModel):
             models.Index(fields=["status"], name="store_status_idx"),
             models.Index(fields=["created_at"], name="store_created_idx"),
         ]
+
+    @property
+    def is_open(self) -> bool | None:
+        """True/False by local time; None when working hours are not set."""
+        if self.opens_at is None or self.closes_at is None:
+            return None
+        from django.utils import timezone
+
+        now = timezone.localtime().time()
+        if self.opens_at <= self.closes_at:
+            return self.opens_at <= now <= self.closes_at
+        return now >= self.opens_at or now <= self.closes_at  # overnight shift
 
     def __str__(self) -> str:
         return self.name

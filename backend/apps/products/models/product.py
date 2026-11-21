@@ -26,6 +26,9 @@ class Product(BaseModel):
         choices=ProductStatus.choices,
         default=ProductStatus.DRAFT,
     )
+    sku = models.CharField(max_length=60, blank=True, help_text="Seller's own article code.")
+    # Seller gets an alert when tracked stock falls to this number or below.
+    low_stock_threshold = models.PositiveIntegerField(default=5)
     # Price before the discount. When set (and > price) the product is "on
     # sale" and clients show the strike-through price and discount_percent.
     old_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)

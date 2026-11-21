@@ -11,11 +11,16 @@ from apps.orders.views import (
     MyOrdersView,
     OrderCreateView,
     OrderDetailView,
+    OrderPrintView,
     PromoCheckView,
     RejectOrderView,
+    ReorderView,
     ReturnRequestCreateView,
     ReturnRequestDecideView,
     SellerOrderListView,
+    SellerOrdersExportView,
+    SellerPromoDetailView,
+    SellerPromoListCreateView,
     SellerStatsView,
 )
 
@@ -31,6 +36,15 @@ urlpatterns = [
         name="cart-item-detail",
     ),
     path("orders/store/stats", SellerStatsView.as_view(), name="seller-stats"),
+    path("orders/store/export", SellerOrdersExportView.as_view(), name="seller-orders-export"),
+    path("orders/<int:order_id>/print", OrderPrintView.as_view(), name="order-print"),
+    path("orders/<int:order_id>/reorder", ReorderView.as_view(), name="order-reorder"),
+    path("stores/my/promo-codes", SellerPromoListCreateView.as_view(), name="seller-promo-list"),
+    path(
+        "stores/my/promo-codes/<int:promo_id>",
+        SellerPromoDetailView.as_view(),
+        name="seller-promo-detail",
+    ),
     path("orders/<int:order_id>/return", ReturnRequestCreateView.as_view(), name="order-return"),
     path(
         "orders/<int:order_id>/return/decide",

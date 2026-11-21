@@ -13,6 +13,7 @@ from apps.stores.views import (
     StoreDetailView,
     StoreListView,
     StoreReviewListView,
+    StoreReviewReplyView,
     VillageDetailView,
     VillageListView,
 )
@@ -28,6 +29,11 @@ urlpatterns = [
         "stores/<int:store_id>/delivery-zones",
         StoreDeliveryZoneListView.as_view(),
         name="store-delivery-zones",
+    ),
+    path(
+        "store-reviews/<int:review_id>/reply",
+        StoreReviewReplyView.as_view(),
+        name="store-review-reply",
     ),
     path(
         "stores/<int:store_id>/reviews",

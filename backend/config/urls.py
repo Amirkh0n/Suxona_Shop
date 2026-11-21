@@ -12,6 +12,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from config.share import share_product, share_store
 from config.views import home
 
 
@@ -33,6 +34,8 @@ admin.site.index_title = "Platforma boshqaruvi"
 urlpatterns = [
     path("", home, name="home"),
     path("healthz", healthz, name="healthz"),
+    path("share/products/<int:product_id>", share_product, name="share-product"),
+    path("share/stores/<int:store_id>", share_store, name="share-store"),
     path("admin/", admin.site.urls),
     path("api/v1/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.stores.urls")),

@@ -38,6 +38,8 @@ class CreateProductService:
         description: str = "",
         stock: int | None = None,
         old_price: Decimal | None = None,
+        sku: str = "",
+        low_stock_threshold: int = 5,
     ) -> Product:
         locked_store = Store.objects.select_for_update().filter(pk=store.pk).first()
         if locked_store is None:
@@ -64,6 +66,8 @@ class CreateProductService:
                 price=price,
                 old_price=old_price,
                 stock=stock,
+                sku=sku,
+                low_stock_threshold=low_stock_threshold,
                 status=ProductStatus.DRAFT,
             )
         except IntegrityError as exc:

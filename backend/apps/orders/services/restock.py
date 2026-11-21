@@ -34,3 +34,10 @@ def restock_order_items(order: Order) -> None:
             Product.objects.filter(pk=item.product_id).update(
                 stock=F("stock") + item.quantity
             )
+
+    # Stock went up through F() updates (no save signal): wake "notify me" subscribers.
+    from apps.notifications.telegram.services import after_commit
+    from apps.products.services.alerts import fire_back_in_stock
+
+    for product_id in {item.product_id for item in order.items.all()}:
+        after_commit(fire_back_in_stock, product_id=product_id)

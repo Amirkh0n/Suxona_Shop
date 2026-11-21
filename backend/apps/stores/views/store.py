@@ -10,6 +10,7 @@ from apps.common.permissions import IsSeller
 from apps.common.schema import DetailSerializer
 from apps.stores.exceptions import NotStoreOwnerError, StoreNotFound
 from apps.stores.selectors import StoreSelector
+from apps.stores.selectors.distance import nearest_first
 from apps.stores.serializers import (
     StoreDetailSerializer,
     StoreListSerializer,
@@ -28,6 +29,9 @@ class StoreListView(PaginatedAPIView):
         summary="List active stores",
         parameters=[
             OpenApiParameter("search", str, description="Search by store name."),
+            OpenApiParameter("lat", float, description="Your latitude; sorts by distance."),
+            OpenApiParameter("lng", float, description="Your longitude; sorts by distance."),
+            OpenApiParameter("open_now", bool, description="Only stores open right now."),
         ],
         responses={200: StoreListSerializer(many=True)},
     )
@@ -37,6 +41,15 @@ class StoreListView(PaginatedAPIView):
             stores = StoreSelector.search_stores(search)
         else:
             stores = StoreSelector.get_active_stores()
+        if request.query_params.get("open_now", "").lower() in ("1", "true"):
+            stores = [s for s in stores if s.is_open is not False]
+        try:
+            lat = float(request.query_params["lat"])
+            lng = float(request.query_params["lng"])
+        except (KeyError, ValueError):
+            lat = lng = None
+        if lat is not None:
+            stores = nearest_first(stores, lat, lng)
         return self.paginate(stores, StoreListSerializer, request)
 
 

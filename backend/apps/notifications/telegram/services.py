@@ -259,3 +259,14 @@ def notify_seller_product_moderated(*, product_id: int) -> None:
         text,
         [("Mahsulotni ochish", _app(f"/sotuvchi/mahsulotlar/{product.pk}"))],
     )
+
+
+# -- generic user events (stock / price alerts, review replies) -----------------
+def notify_event(*, user_id: int, kind: str, title: str, body: str = "", path: str = "") -> None:
+    """In-app notification + Telegram message with a link to ``path`` on the frontend."""
+    user = User.objects.filter(pk=user_id).first()
+    if user is None:
+        return
+    create_notification(user, kind=kind, title=title, body=body, link=path)
+    text = f"{title}\n{body}".strip()
+    _notify_user(user, text, [("Ochish", _app(path))] if path else None)

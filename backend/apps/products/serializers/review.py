@@ -11,7 +11,10 @@ class ProductReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductReview
-        fields = ["id", "rating", "comment", "customer_name", "created_at"]
+        fields = [
+            "id", "rating", "comment", "customer_name", "created_at",
+            "seller_reply", "seller_replied_at",
+        ]
         read_only_fields = fields
 
 

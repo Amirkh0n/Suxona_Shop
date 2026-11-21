@@ -28,7 +28,7 @@ class UpdateStoreService:
         "allows_pickup",
     )
     # Fields where None is meaningful ("no opening hours set").
-    NULLABLE_FIELDS = ("opens_at", "closes_at")
+    NULLABLE_FIELDS = ("opens_at", "closes_at", "latitude", "longitude")
 
     @staticmethod
     @transaction.atomic

@@ -3,7 +3,7 @@ from .delivery_zone import (
     DeliveryZoneDetailView,
     StoreDeliveryZoneListView,
 )
-from .review import OrderReviewCreateView, StoreReviewListView
+from .review import OrderReviewCreateView, StoreReviewListView, StoreReviewReplyView
 from .store import MyStoreView, StoreDetailView, StoreListView
 from .store_application import (
     ApproveStoreApplicationView,
@@ -16,6 +16,7 @@ from .village import VillageDetailView, VillageListView
 __all__ = [
     "OrderReviewCreateView",
     "StoreReviewListView",
+    "StoreReviewReplyView",
     "DeliveryZoneCreateView",
     "DeliveryZoneDetailView",
     "StoreDeliveryZoneListView",

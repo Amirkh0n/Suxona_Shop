@@ -11,6 +11,10 @@ from apps.accounts.views import (
     TelegramMeView,
     TelegramVerifyView,
 )
+from apps.accounts.views.password_reset import (
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+)
 
 app_name = "accounts"
 
@@ -18,6 +22,12 @@ urlpatterns = [
     # Auth
     path("auth/register", RegisterView.as_view(), name="register"),
     path("auth/login", LoginView.as_view(), name="login"),
+    path("auth/password-reset", PasswordResetRequestView.as_view(), name="password-reset"),
+    path(
+        "auth/password-reset/confirm",
+        PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
+    ),
     path("auth/refresh", RefreshTokenView.as_view(), name="refresh"),
     path("auth/me", CurrentUserView.as_view(), name="current-user"),
     path(

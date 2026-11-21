@@ -18,6 +18,8 @@ class ProductReview(BaseModel):
     comment = models.TextField(blank=True)
     # Moderators can hide abusive reviews; hidden ones do not count in the average.
     is_hidden = models.BooleanField(default=False)
+    seller_reply = models.TextField(blank=True)
+    seller_replied_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Mahsulot sharhi"

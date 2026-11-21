@@ -20,6 +20,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "sku",
             "price",
             "old_price",
             "discount_percent",
@@ -60,6 +61,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "store",
             "category",
             "name",
+            "sku",
+            "low_stock_threshold",
             "description",
             "price",
             "old_price",
@@ -87,6 +90,8 @@ class ProductCreateSerializer(serializers.Serializer):
         max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
     )
     stock = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    sku = serializers.CharField(max_length=60, required=False, allow_blank=True)
+    low_stock_threshold = serializers.IntegerField(min_value=0, required=False)
 
 
 class ProductUpdateSerializer(serializers.Serializer):
@@ -104,4 +109,6 @@ class ProductUpdateSerializer(serializers.Serializer):
         max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
     )
     stock = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    sku = serializers.CharField(max_length=60, required=False, allow_blank=True)
+    low_stock_threshold = serializers.IntegerField(min_value=0, required=False)
     status = serializers.CharField(max_length=20, required=False)
