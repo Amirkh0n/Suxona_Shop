@@ -65,6 +65,11 @@ export default function Profile() {
         </Link>
       ))}
 
+      <p style={{ textAlign: 'center', fontSize: 'var(--fs-sm)', margin: 'var(--sp-4) 0' }}>
+        <Link to="/shartlar" className="muted">Foydalanish shartlari</Link>{' · '}
+        <Link to="/maxfiylik" className="muted">Maxfiylik siyosati</Link>
+      </p>
+
       <button type="button" className="card profile-menu-item" style={{ width: '100%', border: 'none', cursor: 'pointer', color: 'var(--color-danger)' }} onClick={logout}>
         <span className="profile-menu-icon" style={{ color: 'var(--color-danger)' }}><LogoutIcon width={18} height={18} /></span>
         <span className="profile-menu-label" style={{ color: 'var(--color-danger)' }}>{t('profile.logout')}</span>

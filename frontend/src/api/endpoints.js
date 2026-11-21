@@ -6,6 +6,8 @@ export const authApi = {
   register: (payload) => api.post('/auth/register', payload),
   refresh: (refresh) => api.post('/auth/refresh', { refresh }),
   me: () => api.get('/auth/me'),
+  passwordResetRequest: (phone) => api.post('/auth/password-reset', { phone }),
+  passwordResetConfirm: (payload) => api.post('/auth/password-reset/confirm', payload),
   telegramVerify: (payload) => api.post('/auth/telegram/verify', payload),
 };
 
@@ -64,6 +66,15 @@ export const productApi = {
   update: (id, payload) => api.patch(`/products/${id}`, payload),
   remove: (id) => api.delete(`/products/${id}`),
   myProducts: (params) => api.get('/products/my', { params }),
+  exportCsv: () => api.get('/products/my/export', { responseType: 'blob' }),
+  importCsv: (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post('/products/my/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  stockAlertIds: () => api.get('/products/stock-alerts'),
+  watchStock: (id) => api.put(`/products/${id}/notify-stock`),
+  unwatchStock: (id) => api.delete(`/products/${id}/notify-stock`),
   uploadImage: (productId, formData) =>
     api.post(`/products/${productId}/images`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -86,6 +97,21 @@ export const notificationApi = {
   unreadCount: () => api.get('/notifications/unread-count'),
   readAll: () => api.post('/notifications/read-all'),
   read: (id) => api.post(`/notifications/${id}/read`),
+};
+
+export const sellerReviewApi = {
+  list: () => api.get('/reviews/my'),
+  reply: (kind, id, reply) =>
+    api.post(`/${kind === 'store' ? 'store-reviews' : 'product-reviews'}/${id}/reply`, { reply }),
+  removeReply: (kind, id) =>
+    api.delete(`/${kind === 'store' ? 'store-reviews' : 'product-reviews'}/${id}/reply`),
+};
+
+export const sellerPromoApi = {
+  list: () => api.get('/stores/my/promo-codes'),
+  create: (payload) => api.post('/stores/my/promo-codes', payload),
+  update: (id, payload) => api.patch(`/stores/my/promo-codes/${id}`, payload),
+  remove: (id) => api.delete(`/stores/my/promo-codes/${id}`),
 };
 
 export const promoApi = {
@@ -143,6 +169,9 @@ export const orderApi = {
     ),
   review: (id, payload) => api.post(`/orders/${id}/review`, payload),
   retrieve: (id) => api.get(`/orders/${id}`),
+  reorder: (id) => api.post(`/orders/${id}/reorder`),
+  printSlip: (id) => api.get(`/orders/${id}/print`, { responseType: 'text' }),
+  exportCsv: (days = 30) => api.get('/orders/store/export', { params: { days }, responseType: 'blob' }),
   my: (params) => api.get('/orders/my', { params }),
   storeOrders: (params) => api.get('/orders/store', { params }),
   accept: (id) => api.post(`/orders/${id}/accept`),

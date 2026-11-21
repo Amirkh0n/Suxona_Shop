@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { orderApi } from '../../api/endpoints';
+import { downloadBlob } from '../../utils/media';
 import { formatDate, formatSum } from '../../utils/format';
 import { RowSkeleton } from '../../components/Skeleton';
 import StatusBadge from '../../components/StatusBadge';
@@ -28,7 +29,13 @@ export default function SellerOrders() {
 
   return (
     <div>
-      <h1>Buyurtmalar</h1>
+      <div className="section-heading">
+        <h1 style={{ margin: 0 }}>Buyurtmalar</h1>
+        <button type="button" className="btn btn-outline btn-sm" onClick={async () => {
+          const { data: blob } = await orderApi.exportCsv(90);
+          downloadBlob(blob, 'buyurtmalar.csv');
+        }}>⬇ CSV (90 kun)</button>
+      </div>
 
       <div className="segmented-tabs">
         {TABS.map((t) => (

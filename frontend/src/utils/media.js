@@ -27,3 +27,15 @@ export function resolveImageUrl(path) {
   }
   return `${IMAGE_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 }
+
+// Saves an axios blob response (CSV export) as a file download.
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

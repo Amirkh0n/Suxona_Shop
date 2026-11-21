@@ -11,6 +11,8 @@ const NAV = [
   { to: '/sotuvchi', label: 'Bosh sahifa', Icon: HomeIcon, end: true },
   { to: '/sotuvchi/mahsulotlar', label: 'Mahsulotlar', Icon: PackageIcon },
   { to: '/sotuvchi/buyurtmalar', label: 'Buyurtmalar', Icon: ReceiptIcon },
+  { to: '/sotuvchi/sharhlar', label: 'Sharhlar', Icon: UsersIcon },
+  { to: '/sotuvchi/promokodlar', label: 'Promokodlar', Icon: ChartIcon },
   { to: '/sotuvchi/sozlamalar', label: 'Sozlamalar', Icon: SettingsIcon },
 ];
 

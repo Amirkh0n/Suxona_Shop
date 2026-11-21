@@ -18,9 +18,35 @@ export default function Home() {
   const [categories, setCategories] = useState([]);
   const [categoryTree, setCategoryTree] = useState(null);
   const [stores, setStores] = useState([]);
+  const [nearMe, setNearMe] = useState(false);
+  const [openNow, setOpenNow] = useState(false);
+  const [geoError, setGeoError] = useState('');
+  const [coords, setCoords] = useState(null);
   const [products, setProducts] = useState([]);
   const [sale, setSale] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // "Menga yaqin" / "Hozir ochiq": re-query stores with the user's position.
+  const toggleNearMe = () => {
+    if (nearMe) { setNearMe(false); setCoords(null); return; }
+    if (!navigator.geolocation) { setGeoError("Brauzer joylashuvni qo'llamaydi."); return; }
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setNearMe(true); },
+      () => setGeoError("Joylashuvga ruxsat berilmadi."),
+      { timeout: 10000 }
+    );
+  };
+
+  useEffect(() => {
+    if (!nearMe && !openNow) return undefined;
+    let cancelled = false;
+    storeApi
+      .list({ page: 1, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}), ...(openNow ? { open_now: true } : {}) })
+      .then(({ data }) => { if (!cancelled) setStores((data?.results || []).slice(0, 6)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [nearMe, openNow, coords]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +144,11 @@ export default function Home() {
           <h2>{t('home.stores')}</h2>
           <Link to="/mahsulotlar" className="section-heading-link">{t('home.all')}</Link>
         </div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 'var(--sp-3)', flexWrap: 'wrap' }}>
+          <button type="button" className={`btn btn-sm ${nearMe ? 'btn-primary' : 'btn-outline'}`} onClick={toggleNearMe}>📍 Menga yaqin</button>
+          <button type="button" className={`btn btn-sm ${openNow ? 'btn-primary' : 'btn-outline'}`} onClick={() => setOpenNow((v) => !v)}>🟢 Hozir ochiq</button>
+        </div>
+        {geoError && <div className="alert alert-error">{geoError}</div>}
         {stores.length === 0 ? (
           <div className="empty-state card"><h3>Hozircha do'konlar yo'q</h3></div>
         ) : (

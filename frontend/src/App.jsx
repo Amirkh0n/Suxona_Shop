@@ -21,6 +21,8 @@ import Favorites from './pages/customer/Favorites';
 import Profile from './pages/customer/Profile';
 import Addresses from './pages/customer/Addresses';
 import BecomeSeller from './pages/customer/BecomeSeller';
+import ForgotPassword from './pages/customer/ForgotPassword';
+import Legal from './pages/Legal';
 import NotFound from './pages/NotFound';
 
 // Seller panel is a separate, sidebar-driven dashboard that an ordinary
@@ -32,6 +34,8 @@ const SellerProducts = lazy(() => import('./pages/seller/Products'));
 const SellerProductForm = lazy(() => import('./pages/seller/ProductForm'));
 const SellerOrders = lazy(() => import('./pages/seller/Orders'));
 const SellerSettings = lazy(() => import('./pages/seller/Settings'));
+const SellerReviews = lazy(() => import('./pages/seller/Reviews'));
+const SellerPromos = lazy(() => import('./pages/seller/Promos'));
 
 export default function App() {
   return (
@@ -40,6 +44,7 @@ export default function App() {
       <Route element={<FocusLayout />}>
         <Route path="/kirish" element={<Login />} />
         <Route path="/royxatdan-otish" element={<Register />} />
+        <Route path="/parolni-tiklash" element={<ForgotPassword />} />
         <Route path="/rasmiylashtirish/:storeId" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/buyurtma-qabul-qilindi/:orderId" element={<ProtectedRoute><OrderSuccess /></ProtectedRoute>} />
       </Route>
@@ -55,6 +60,8 @@ export default function App() {
 
       {/* Secondary screens: own PageHeader/topbar, tab bar stays for quick nav */}
       <Route element={<BareLayout />}>
+        <Route path="/shartlar" element={<Legal doc="shartlar" />} />
+        <Route path="/maxfiylik" element={<Legal doc="maxfiylik" />} />
         <Route path="/mahsulotlar" element={<ProductList />} />
         <Route path="/mahsulot/:productId" element={<ProductDetail />} />
         <Route path="/dokon/:storeId" element={<StoreDetail />} />
@@ -81,6 +88,8 @@ export default function App() {
         <Route path="mahsulotlar/yangi" element={<Suspense fallback={<PageSpinner />}><SellerProductForm /></Suspense>} />
         <Route path="mahsulotlar/:productId" element={<Suspense fallback={<PageSpinner />}><SellerProductForm /></Suspense>} />
         <Route path="buyurtmalar" element={<Suspense fallback={<PageSpinner />}><SellerOrders /></Suspense>} />
+        <Route path="sharhlar" element={<Suspense fallback={<PageSpinner />}><SellerReviews /></Suspense>} />
+        <Route path="promokodlar" element={<Suspense fallback={<PageSpinner />}><SellerPromos /></Suspense>} />
         <Route path="sozlamalar" element={<Suspense fallback={<PageSpinner />}><SellerSettings /></Suspense>} />
       </Route>
 

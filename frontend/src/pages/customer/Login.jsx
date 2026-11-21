@@ -34,6 +34,7 @@ export default function Login() {
       <h1>Xush kelibsiz</h1>
       <p style={{ marginBottom: 'var(--sp-5)' }}>Hisobingizga kiring va xaridni davom ettiring.</p>
 
+      {location.state?.notice && <div className="alert">{location.state.notice}</div>}
       {error && <div className="alert alert-error">{error}</div>}
 
       <form onSubmit={onSubmit}>
@@ -44,6 +45,9 @@ export default function Login() {
         <div className="field">
           <label htmlFor="password">Parol</label>
           <input id="password" name="password" type="password" value={form.password} onChange={onChange} required />
+        </div>
+        <div style={{ textAlign: 'right', margin: '-4px 0 var(--sp-3)', fontSize: 'var(--fs-sm)' }}>
+          <Link to="/parolni-tiklash" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Parolni unutdingizmi?</Link>
         </div>
         <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
           {loading ? 'Kirilmoqda...' : 'Kirish'}

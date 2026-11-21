@@ -10,7 +10,7 @@ import { TrashIcon, PlusIcon } from '../../components/Icons';
 
 export default function SellerSettings() {
   const { myStore, refreshMyStore } = useAuth();
-  const [form, setForm] = useState({ name: '', description: '', phone: '', telegram_username: '', min_order_amount: '0', opens_at: '', closes_at: '', delivery_time: '', allows_pickup: false });
+  const [form, setForm] = useState({ name: '', description: '', phone: '', telegram_username: '', min_order_amount: '0', opens_at: '', closes_at: '', delivery_time: '', allows_pickup: false, latitude: '', longitude: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -41,6 +41,8 @@ export default function SellerSettings() {
         closes_at: (myStore.closes_at || '').slice(0, 5),
         delivery_time: myStore.delivery_time || '',
         allows_pickup: Boolean(myStore.allows_pickup),
+        latitude: myStore.latitude ?? '',
+        longitude: myStore.longitude ?? '',
       });
     }
   }, [myStore]);
@@ -58,6 +60,15 @@ export default function SellerSettings() {
   };
 
   useEffect(loadZones, [myStore]);
+
+  const useMyLocation = () => {
+    if (!navigator.geolocation) { setError('Brauzer joylashuvni qo\'llamaydi.'); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setForm((f) => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) })),
+      () => setError('Joylashuvni aniqlab bo\'lmadi. Ruxsat bering yoki qo\'lda kiriting.'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -110,6 +121,8 @@ export default function SellerSettings() {
         ...form,
         opens_at: form.opens_at || null,
         closes_at: form.closes_at || null,
+        latitude: form.latitude === '' ? null : Number(form.latitude).toFixed(6),
+        longitude: form.longitude === '' ? null : Number(form.longitude).toFixed(6),
       });
       await refreshMyStore();
       setSaved(true);
@@ -219,6 +232,14 @@ export default function SellerSettings() {
         <div className="field">
           <label htmlFor="delivery_time">Yetkazish vaqti</label>
           <input id="delivery_time" name="delivery_time" value={form.delivery_time} onChange={onChange} placeholder="Masalan: 30-45 daqiqa" />
+        </div>
+        <div className="field">
+          <label htmlFor="latitude">Joylashuv (yaqin do'konlar ro'yxatida chiqish uchun)</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input id="latitude" name="latitude" inputMode="decimal" value={form.latitude} onChange={onChange} placeholder="Kenglik 41.311000" />
+            <input name="longitude" inputMode="decimal" value={form.longitude} onChange={onChange} placeholder="Uzunlik 69.279000" aria-label="Uzunlik" />
+          </div>
+          <button type="button" className="btn btn-outline btn-sm" style={{ marginTop: 8 }} onClick={useMyLocation}>📍 Hozirgi joylashuvim</button>
         </div>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 'var(--sp-4)' }}>
           <input type="checkbox" checked={form.allows_pickup} onChange={(e) => setForm({ ...form, allows_pickup: e.target.checked })} />

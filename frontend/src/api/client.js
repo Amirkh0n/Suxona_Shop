@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = BASE_URL.replace(/\/+$/, '');
 
 const ACCESS_KEY = 'suxona_access';
 const REFRESH_KEY = 'suxona_refresh';

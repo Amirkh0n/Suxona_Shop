@@ -4,12 +4,30 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { useNavigate, useParams } from 'react-router-dom';
 import { orderApi, returnApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
-import { formatDate, formatSum } from '../../utils/format';
+import { formatDate, formatSum, ORDER_STATUS_LABELS } from '../../utils/format';
 import { resolveImageUrl } from '../../utils/media';
 import { extractErrorMessage } from '../../api/client';
 import { PageSpinner } from '../../components/Spinner';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
+
+function Timeline({ events }) {
+  if (!events?.length) return null;
+  return (
+    <div className="card review-card">
+      <div className="review-card-title">Buyurtma holati</div>
+      <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {events.map((ev, i) => (
+          <li key={`${ev.status}-${ev.at}`} style={{ display: 'flex', gap: 10, padding: '6px 0', opacity: i === events.length - 1 ? 1 : 0.7 }}>
+            <span aria-hidden style={{ color: i === events.length - 1 ? 'var(--color-primary)' : 'var(--color-muted, #8a948d)' }}>{i === events.length - 1 ? '●' : '✓'}</span>
+            <span style={{ flex: 1, fontWeight: i === events.length - 1 ? 700 : 500 }}>{ORDER_STATUS_LABELS[ev.status] || ev.status}</span>
+            <span className="muted" style={{ fontSize: 'var(--fs-sm)' }}>{formatDate(ev.at)}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 export default function OrderDetail() {
   const { orderId } = useParams();
@@ -28,6 +46,7 @@ export default function OrderDetail() {
   const [returnReason, setReturnReason] = useState('');
   const [returnOpen, setReturnOpen] = useState(false);
   const [comment, setComment] = useState('');
+  const [reorderMsg, setReorderMsg] = useState('');
 
   const load = () => orderApi.retrieve(orderId).then(({ data }) => setOrder(data));
 
@@ -38,6 +57,41 @@ export default function OrderDetail() {
   }, [orderId]);
 
   const isSellerOfThisOrder = myStore != null && order?.store?.id === myStore.id;
+
+  const printSlip = async () => {
+    try {
+      const { data } = await orderApi.printSlip(order.id);
+      const w = window.open('', '_blank');
+      if (!w) { setError("Oyna ochilmadi: brauzerda pop-up'ga ruxsat bering."); return; }
+      w.document.write(data);
+      w.document.close();
+      w.focus();
+      w.print();
+    } catch (err) {
+      setError(extractErrorMessage(err, "Varaqani ochib bo'lmadi."));
+    }
+  };
+
+  const reorder = async () => {
+    setBusy(true);
+    setReorderMsg('');
+    try {
+      const { data } = await orderApi.reorder(order.id);
+      if (data.added.length && !data.skipped.length) {
+        navigate('/savat');
+        return;
+      }
+      setReorderMsg(
+        data.added.length
+          ? `Savatga qo'shildi: ${data.added.length} ta. Mavjud emas: ${data.skipped.map((s) => s.name).join(', ')}`
+          : `Hech narsa qo'shilmadi — mavjud emas: ${data.skipped.map((s) => s.name).join(', ')}`
+      );
+    } catch (err) {
+      setError(extractErrorMessage(err, "Qayta buyurtma berib bo'lmadi."));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const runAction = async (action, payload) => {
     setError('');
@@ -166,6 +220,26 @@ export default function OrderDetail() {
               </>
             )}
           </div>
+        )}
+
+        <Timeline events={order.timeline} />
+
+        {!isSellerOfThisOrder && order.courier_phone && ['ACCEPTED', 'DELIVERING'].includes(order.status) && (
+          <div className="card review-card">
+            <div className="review-card-title">Kuryer</div>
+            <a href={`tel:${order.courier_phone}`} className="btn btn-outline btn-block">📞 {order.courier_name || 'Kuryer'} · {order.courier_phone}</a>
+          </div>
+        )}
+
+        {isSellerOfThisOrder && (
+          <button type="button" className="btn btn-outline btn-block" onClick={printSlip}>🖨 Chop etish (buyurtma varaqasi)</button>
+        )}
+
+        {!isSellerOfThisOrder && ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(order.status) && (
+          <>
+            <button type="button" className="btn btn-outline btn-block" disabled={busy} onClick={reorder}>↻ Qayta buyurtma berish</button>
+            {reorderMsg && <div className="alert">{reorderMsg}</div>}
+          </>
         )}
 
         {order.return_request && (

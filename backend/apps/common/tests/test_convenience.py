@@ -282,3 +282,13 @@ def test_password_reset_locks_after_attempts(user, sent):
         format="json",
     )
     assert res.status_code == 400
+
+
+def test_seller_reviews_list(user, shop):
+    from apps.products.models import ProductReview
+
+    store, product = shop
+    ProductReview.objects.create(product=product, customer=user, rating=4, comment="yaxshi")
+    res = client_for(store.owner).get("/api/v1/reviews/my").json()
+    assert res["results"][0]["title"] == "Plov" and res["results"][0]["kind"] == "product"
+    assert client_for(user).get("/api/v1/reviews/my").status_code == 403

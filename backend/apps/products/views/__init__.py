@@ -17,6 +17,7 @@ from .tools import (
     ProductCsvExportView,
     ProductCsvImportView,
     ProductReviewReplyView,
+    SellerReviewsView,
     StockAlertIdsView,
     StockAlertView,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "ProductCsvExportView",
     "ProductCsvImportView",
     "ProductReviewReplyView",
+    "SellerReviewsView",
     "StockAlertIdsView",
     "StockAlertView",
     "ProductReviewListCreateView",

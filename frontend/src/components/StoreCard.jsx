@@ -14,6 +14,11 @@ export default function StoreCard({ store }) {
         </div>
         <div style={{ minWidth: 0 }}>
           <div className="store-card-name">{store.name}</div>
+          <div className="muted" style={{ fontSize: 'var(--fs-sm)' }}>
+            {store.is_open === true && <span style={{ color: 'var(--color-primary)' }}>● Ochiq</span>}
+            {store.is_open === false && <span>● Yopiq</span>}
+            {store.distance_km != null && <span>{store.is_open != null ? ' · ' : ''}{store.distance_km} km</span>}
+          </div>
           {store.description && <div className="store-card-desc">{store.description}</div>}
         </div>
       </div>

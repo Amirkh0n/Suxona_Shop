@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { productApi } from '../../api/endpoints';
 import { extractErrorMessage } from '../../api/client';
 import { formatSum, PRODUCT_STATUS_LABELS } from '../../utils/format';
-import { resolveImageUrl } from '../../utils/media';
+import { resolveImageUrl, downloadBlob } from '../../utils/media';
 import { RowSkeleton } from '../../components/Skeleton';
 import { PlusIcon } from '../../components/Icons';
 
@@ -27,6 +27,7 @@ export default function SellerProducts() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
+  const [importReport, setImportReport] = useState(null);
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebounced(search.trim()); setPage(1); }, 300);
@@ -58,6 +59,31 @@ export default function SellerProducts() {
     setReload((n) => n + 1);
   };
 
+  const exportCsv = async () => {
+    try {
+      const { data: blob } = await productApi.exportCsv();
+      downloadBlob(blob, 'mahsulotlar.csv');
+    } catch (err) {
+      setError(extractErrorMessage(err, "Eksport qilib bo'lmadi."));
+    }
+  };
+
+  const importCsv = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true); setError(''); setImportReport(null);
+    try {
+      const { data: report } = await productApi.importCsv(file);
+      setImportReport(report);
+      setReload((n) => n + 1);
+    } catch (err) {
+      setError(extractErrorMessage(err, "Faylni yuklab bo'lmadi."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div>
       <div className="section-heading">
@@ -66,6 +92,28 @@ export default function SellerProducts() {
           <PlusIcon width={16} height={16} /> Qo'shish
         </Link>
       </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 'var(--sp-3)', flexWrap: 'wrap' }}>
+        <button type="button" className="btn btn-outline btn-sm" onClick={exportCsv}>⬇ CSV yuklab olish</button>
+        <label className="btn btn-outline btn-sm" style={{ cursor: busy ? 'wait' : 'pointer' }}>
+          ⬆ CSV import
+          <input type="file" accept=".csv,text/csv" onChange={importCsv} disabled={busy} hidden />
+        </label>
+        <span className="muted" style={{ fontSize: 'var(--fs-sm)', alignSelf: 'center' }}>
+          Ustunlar: sku, name, category, price, old_price, stock, description
+        </span>
+      </div>
+      {importReport && (
+        <div className={`alert${importReport.errors.length ? ' alert-error' : ''}`}>
+          Yangi: {importReport.created}, yangilandi: {importReport.updated}
+          {importReport.errors.length > 0 && (
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              {importReport.errors.slice(0, 8).map((er) => <li key={er.line}>{er.line}-qator ({er.name || '—'}): {er.error}</li>)}
+              {importReport.errors.length > 8 && <li>… va yana {importReport.errors.length - 8} ta xato</li>}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 'var(--sp-3)' }}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nomi bo'yicha qidirish" aria-label="Qidirish" />
@@ -107,7 +155,10 @@ export default function SellerProducts() {
                 </div>
                 <div className="seller-product-info">
                   <div className="seller-product-name">{p.name}</div>
-                  <div className="seller-product-meta">{formatSum(p.price)} · {p.stock != null ? `${p.stock} dona` : 'cheksiz'}</div>
+                  <div className="seller-product-meta">
+                    {p.sku ? `${p.sku} · ` : ''}{formatSum(p.price)} · {p.stock != null ? `${p.stock} dona` : 'cheksiz'}
+                    {p.stock != null && p.stock <= 5 && <span className="badge badge-cancelled" style={{ marginLeft: 6 }}>{p.stock === 0 ? 'Tugadi' : 'Kam qoldi'}</span>}
+                  </div>
                 </div>
                 <span className={`badge ${STATUS_CLASS[p.status] || ''}`}>{PRODUCT_STATUS_LABELS[p.status] || p.status}</span>
               </Link>

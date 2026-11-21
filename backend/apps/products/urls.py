@@ -18,6 +18,7 @@ from apps.products.views import (
     ProductReviewReplyView,
     ProductVariantDetailView,
     ProductVariantListCreateView,
+    SellerReviewsView,
     SimilarProductsView,
     StockAlertIdsView,
     StockAlertView,
@@ -39,6 +40,7 @@ urlpatterns = [
     path("products/my", MyProductsView.as_view(), name="product-my"),
     path("products/my/export", ProductCsvExportView.as_view(), name="product-export"),
     path("products/my/import", ProductCsvImportView.as_view(), name="product-import"),
+    path("reviews/my", SellerReviewsView.as_view(), name="seller-reviews"),
     path("products/stock-alerts", StockAlertIdsView.as_view(), name="stock-alert-ids"),
     path(
         "products/<int:product_id>/notify-stock",

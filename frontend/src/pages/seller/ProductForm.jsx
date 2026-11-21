@@ -29,7 +29,7 @@ export default function SellerProductForm() {
   const fileInputRef = useRef(null);
 
   const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', old_price: '', stock: '', status: 'ACTIVE' });
+  const [form, setForm] = useState({ category_id: '', name: '', description: '', price: '', old_price: '', stock: '', sku: '', low_stock_threshold: 5, status: 'ACTIVE' });
   const [images, setImages] = useState([]);
   const [variants, setVariants] = useState([]);
   const [moderation, setModeration] = useState({ approved: false, note: '' });
@@ -56,6 +56,8 @@ export default function SellerProductForm() {
         price: data.price || '',
         old_price: data.old_price || '',
         stock: data.stock ?? '',
+        sku: data.sku || '',
+        low_stock_threshold: data.low_stock_threshold ?? 5,
         status: data.status || 'ACTIVE',
       });
       setImages(data.images || []);
@@ -79,6 +81,8 @@ export default function SellerProductForm() {
         price: form.price,
         old_price: form.old_price === '' ? null : form.old_price,
         stock: form.stock === '' ? null : Number(form.stock),
+        sku: form.sku.trim(),
+        low_stock_threshold: Number(form.low_stock_threshold) || 0,
       };
       if (isEdit) {
         await productApi.update(productId, { ...payload, status: form.status });
@@ -264,6 +268,16 @@ export default function SellerProductForm() {
           <div className="field">
             <label htmlFor="stock">Miqdor (ixtiyoriy)</label>
             <input id="stock" name="stock" type="number" min="0" value={form.stock} onChange={onChange} placeholder="Cheksiz" />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div className="field" style={{ flex: 1 }}>
+            <label htmlFor="sku">Artikul / SKU (ixtiyoriy)</label>
+            <input id="sku" name="sku" maxLength={60} value={form.sku} onChange={onChange} />
+          </div>
+          <div className="field" style={{ flex: 1 }}>
+            <label htmlFor="low_stock_threshold">Kam qolganda ogohlantirish (dona)</label>
+            <input id="low_stock_threshold" name="low_stock_threshold" type="number" min="0" value={form.low_stock_threshold} onChange={onChange} />
           </div>
         </div>
         {isEdit && inReview && (

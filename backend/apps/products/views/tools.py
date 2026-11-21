@@ -246,3 +246,42 @@ class ProductReviewReplyView(APIView):
         review.seller_reply, review.seller_replied_at = "", None
         review.save(update_fields=["seller_reply", "seller_replied_at", "updated_at"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Products"])
+class SellerReviewsView(APIView):
+    """Latest product and store reviews of my store, for answering them."""
+
+    permission_classes = [IsSeller]
+
+    @extend_schema(summary="Reviews left for my store and products (seller)")
+    def get(self, request: Request) -> Response:
+        from apps.stores.models import StoreReview
+
+        store = _my_store(request)
+        if store is None:
+            return Response({"detail": "Store not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        def row(kind, r, title):
+            return {
+                "kind": kind,
+                "id": r.pk,
+                "title": title,
+                "rating": r.rating,
+                "comment": r.comment,
+                "customer_name": r.customer.first_name or "Xaridor",
+                "created_at": r.created_at,
+                "seller_reply": r.seller_reply,
+            }
+
+        products = ProductReview.objects.filter(product__store=store, is_hidden=False)
+        rows = [
+            row("product", r, r.product.name)
+            for r in products.select_related("product", "customer")[:50]
+        ]
+        rows += [
+            row("store", r, "Do'kon")
+            for r in StoreReview.objects.filter(store=store).select_related("customer")[:50]
+        ]
+        rows.sort(key=lambda r: r["created_at"], reverse=True)
+        return Response({"results": rows[:80]})

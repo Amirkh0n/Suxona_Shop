@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '../../api/endpoints';
-import { extractErrorMessage } from '../../api/client';
+import { API_BASE_URL, extractErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
@@ -33,6 +33,21 @@ export default function ProductDetail() {
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [error, setError] = useState('');
+  const [watching, setWatching] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    productApi.stockAlertIds().then(({ data }) => setWatching((data.ids || []).includes(Number(productId)))).catch(() => {});
+  }, [user, productId]);
+
+  const toggleWatch = async () => {
+    if (!user) { navigate('/kirish', { state: { from: { pathname: `/mahsulot/${productId}` } } }); return; }
+    try {
+      if (watching) await productApi.unwatchStock(product.id); else await productApi.watchStock(product.id);
+      setWatching(!watching);
+      notify(watching ? 'Eslatma bekor qilindi' : "Mahsulot kelganda Telegram orqali xabar beramiz");
+    } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -83,7 +98,9 @@ export default function ProductDetail() {
   const favorite = isFavorite(product.id);
 
   const shareProduct = async () => {
-    const url = window.location.href;
+    // The backend share page carries Open Graph tags (rich preview in Telegram/Instagram)
+    // and redirects people straight to this page.
+    const url = `${API_BASE_URL}/share/products/${product.id}`;
     try {
       if (navigator.share) await navigator.share({ title: product.name, url });
       else { await navigator.clipboard.writeText(url); notify('Havola nusxalandi'); }
@@ -182,7 +199,12 @@ export default function ProductDetail() {
         </div>
 
         {outOfStock ? (
-          <span className="badge badge-cancelled" style={{ marginBottom: 'var(--sp-4)' }}>{PRODUCT_STATUS_LABELS.OUT_OF_STOCK}</span>
+          <div style={{ marginBottom: 'var(--sp-4)', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <span className="badge badge-cancelled">{PRODUCT_STATUS_LABELS.OUT_OF_STOCK}</span>
+            <button type="button" className={`btn ${watching ? 'btn-outline' : 'btn-primary'}`} onClick={toggleWatch}>
+              {watching ? "🔔 Eslatma yoqilgan — bekor qilish" : '🔔 Kelganda xabar ber'}
+            </button>
+          </div>
         ) : stock != null && (
           <p style={{ fontSize: 'var(--fs-sm)', marginBottom: 'var(--sp-4)' }}>Omborda: {stock} dona</p>
         )}
