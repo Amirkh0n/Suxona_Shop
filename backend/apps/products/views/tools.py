@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from apps.common.enums import ProductStatus
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsAuthenticatedUser, IsSeller
+from apps.common.security import csv_safe
 from apps.products.models import Category, Product, ProductReview, StockSubscription
 from apps.products.selectors import ProductSelector
 from apps.products.services import CreateProductService, UpdateProductService
@@ -80,9 +81,9 @@ class ProductCsvExportView(APIView):
         w.writerow(COLUMNS)
         for p in ProductSelector.get_store_products(store.id).select_related("category"):
             w.writerow([
-                p.sku, p.name, p.category.name, p.price,
+                csv_safe(p.sku), csv_safe(p.name), csv_safe(p.category.name), p.price,
                 p.old_price if p.old_price is not None else "",
-                p.stock if p.stock is not None else "", p.description,
+                p.stock if p.stock is not None else "", csv_safe(p.description),
             ])
         return response
 

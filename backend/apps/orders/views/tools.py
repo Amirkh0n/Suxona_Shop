@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 
 from apps.common.exceptions import ServiceError
 from apps.common.permissions import IsAuthenticatedUser, IsSeller
+from apps.common.security import csv_safe
 from apps.orders.models import Order, PromoCode
 from apps.orders.selectors import OrderSelector
 from apps.orders.services.add_cart_item import AddCartItemService
@@ -130,7 +131,8 @@ class SellerOrdersExportView(APIView):
         for o in orders.select_related("customer"):
             w.writerow([
                 o.pk, o.created_at.strftime("%Y-%m-%d %H:%M"), o.status,
-                o.contact_name or o.customer.first_name, o.contact_phone or o.customer.phone,
+                csv_safe(o.contact_name or o.customer.first_name),
+                csv_safe(o.contact_phone or o.customer.phone),
                 o.delivery_method, o.discount_amount, o.total,
             ])
         return response
@@ -144,6 +146,15 @@ class PromoSerializer(serializers.ModelSerializer):
             "valid_from", "valid_until", "max_uses", "used_count", "is_active",
         ]
         read_only_fields = ["id", "used_count"]
+
+    def validate(self, attrs):
+        kind = attrs.get("kind", getattr(self.instance, "kind", "PERCENT"))
+        value = attrs.get("value", getattr(self.instance, "value", None))
+        if value is not None and value <= 0:
+            raise serializers.ValidationError({"value": "Qiymat noldan katta bo'lishi kerak."})
+        if kind == "PERCENT" and value is not None and value > 100:
+            raise serializers.ValidationError({"value": "Foiz 100 dan oshmasligi kerak."})
+        return attrs
 
     def validate_code(self, value: str) -> str:
         value = value.strip().upper()

@@ -63,3 +63,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Production image builds
         run: docker build -f docker/backend/Dockerfile -t suxonashop-api .
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Python dependency + static security scan
+        run: |
+          pip install pip-audit bandit
+          pip-audit -r backend/requirements/base.txt
+          bandit -q -r backend/apps backend/config -x '*/tests/*,*/migrations/*' -ll
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm audit (production deps)
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high

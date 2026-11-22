@@ -13,11 +13,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts import security
 from apps.accounts.models import TelegramAccount, User
 from apps.accounts.models.password_reset import (
     RESET_CODE_TTL,
     PasswordResetCode,
 )
+from apps.accounts.serializers.user import validate_new_password
 from apps.notifications.telegram import client
 
 PHONE_RE = r"^\+?\d{9,15}$"
@@ -105,6 +107,7 @@ class PasswordResetConfirmView(APIView):
                 entry.attempts += 1
                 entry.save(update_fields=["attempts", "updated_at"])
                 return bad
+            validate_new_password(ser.validated_data["new_password"], user)
             user.set_password(ser.validated_data["new_password"])
             user.save(update_fields=["password"])
             entry.used_at = timezone.now()
@@ -112,4 +115,7 @@ class PasswordResetConfirmView(APIView):
             PasswordResetCode.objects.filter(user=user, used_at__isnull=True).update(
                 used_at=timezone.now()
             )
+            # A reset means the old credentials may be compromised: end every session.
+            security.revoke_all_tokens(user)
+            security.clear_failures(user.phone)
         return Response({"detail": "Parol yangilandi."})

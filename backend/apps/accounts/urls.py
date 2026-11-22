@@ -5,6 +5,7 @@ from apps.accounts.views import (
     AddressListCreateView,
     CurrentUserView,
     LoginView,
+    LogoutView,
     RefreshTokenView,
     RegisterView,
     TelegramLinkView,
@@ -29,6 +30,7 @@ urlpatterns = [
         name="password-reset-confirm",
     ),
     path("auth/refresh", RefreshTokenView.as_view(), name="refresh"),
+    path("auth/logout", LogoutView.as_view(), name="logout"),
     path("auth/me", CurrentUserView.as_view(), name="current-user"),
     path(
         "auth/telegram/verify",

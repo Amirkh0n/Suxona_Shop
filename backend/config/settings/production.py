@@ -9,8 +9,8 @@ from .base import *  # noqa: F403
 DEBUG = False
 
 # Fail the deploy loudly instead of running with a guessable signing key.
-if SECRET_KEY in ("", "change-me", "change-me-in-environment"):  # noqa: F405
-    raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value.")
+if SECRET_KEY in ("", "change-me", "change-me-in-environment") or len(SECRET_KEY) < 32:  # noqa: F405
+    raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a random value of 32+ characters.")
 
 # The platform terminates TLS and forwards the original scheme.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -40,3 +40,30 @@ STORAGES = {
 # Without R2, uploaded media lives on local disk. Serve it from Django only when a
 # persistent disk is mounted and this is explicitly enabled (see docs/DEPLOY_RENDER.md).
 SERVE_MEDIA = os.environ.get("DJANGO_SERVE_MEDIA", "false").lower() == "true"
+
+# --- Request hardening ----------------------------------------------------------
+# Behind N trusted proxies (Render's load balancer = 1; add Cloudflare in front = 2).
+# DRF's throttling reads the client IP from X-Forwarded-For; without this number a
+# caller could rotate a fake header value and never hit a rate limit.
+REST_FRAMEWORK = {  # noqa: F405
+    **REST_FRAMEWORK,  # noqa: F405
+    "NUM_PROXIES": int(os.environ.get("DJANGO_NUM_PROXIES", "1")),
+    # JSON only: no browsable API / HTML forms on the public service.
+    "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
+}
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "same-origin"
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Rate limits and login lock-outs live in the cache. Per-process memory would give
+# every gunicorn worker (and instance) its own counters, multiplying every limit, so
+# use Redis when available, else a shared database table (`createcachetable`).
+if not os.environ.get("REDIS_URL"):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "django_cache",
+        }
+    }

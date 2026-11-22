@@ -47,6 +47,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "drf_spectacular",
     "corsheaders",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 LOCAL_APPS = [
@@ -198,7 +199,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 
 # Admin login lands here (Django would otherwise fall back to /accounts/profile/, a 404).
-LOGIN_REDIRECT_URL = "/admin/"
+# Admin lives at /<DJANGO_ADMIN_URL>/ (default "admin/"). Set a custom secret path in
+# production so bots scanning /admin/ find nothing.
+ADMIN_URL = os.environ.get("DJANGO_ADMIN_URL", "admin/").strip("/") + "/"
+LOGIN_REDIRECT_URL = f"/{ADMIN_URL}"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -254,6 +258,10 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer",),
+    # Every refresh issues a new refresh token and burns the old one; replaying a
+    # stolen/old refresh token fails (token_blacklist app).
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
 
 # --- Telegram bot / verification -----------------------------------------

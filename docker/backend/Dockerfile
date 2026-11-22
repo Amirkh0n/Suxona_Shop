@@ -18,7 +18,7 @@ COPY backend/ ./
 
 # Collect static files at build time (admin CSS/JS) so WhiteNoise can serve them.
 # The build-only values satisfy the production settings checks; they are not kept.
-RUN DJANGO_SECRET_KEY=build-only DJANGO_CORS_ALLOWED_ORIGINS=https://build.invalid \
+RUN DJANGO_SECRET_KEY=build-only-key-not-used-at-runtime-0000000000 DJANGO_CORS_ALLOWED_ORIGINS=https://build.invalid \
     python manage.py collectstatic --noinput
 
 COPY docker/backend/entrypoint.sh /entrypoint.sh

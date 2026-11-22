@@ -4,7 +4,11 @@ Kept out of base.py so the admin's look/navigation can be tuned without
 touching core settings.
 """
 
+import os
+
 from django.urls import reverse_lazy  # noqa: F401  (documented for custom links below)
+
+_ADMIN = "/" + os.environ.get("DJANGO_ADMIN_URL", "admin/").strip("/") + "/"
 
 JAZZMIN_SETTINGS = {
     # -- branding --------------------------------------------------------------
@@ -25,17 +29,17 @@ JAZZMIN_SETTINGS = {
         {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
         {
             "name": "Arizalar",
-            "url": "/admin/stores/storeapplication/?status__exact=PENDING",
+            "url": f"{_ADMIN}stores/storeapplication/?status__exact=PENDING",
             "permissions": ["stores.view_storeapplication"],
         },
         {
             "name": "Moderatsiya",
-            "url": "/admin/products/product/?status__exact=PENDING_REVIEW",
+            "url": f"{_ADMIN}products/product/?status__exact=PENDING_REVIEW",
             "permissions": ["products.view_product"],
         },
         {
             "name": "Buyurtmalar",
-            "url": "/admin/orders/order/?status__exact=PENDING",
+            "url": f"{_ADMIN}orders/order/?status__exact=PENDING",
             "permissions": ["orders.view_order"],
         },
         {"name": "API", "url": "/api/docs/", "new_window": True},

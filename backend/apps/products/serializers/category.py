@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.common.security import SafeImageField
 from apps.products.models import Category
 
 
@@ -26,12 +27,12 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
 class CategoryCreateSerializer(serializers.Serializer):
     parent_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     name = serializers.CharField(max_length=255)
-    icon = serializers.ImageField(required=False)
+    icon = SafeImageField(required=False)
     is_active = serializers.BooleanField(required=False, default=True)
 
 
 class CategoryUpdateSerializer(serializers.Serializer):
     parent_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     name = serializers.CharField(max_length=255, required=False)
-    icon = serializers.ImageField(required=False)
+    icon = SafeImageField(required=False)
     is_active = serializers.BooleanField(required=False)

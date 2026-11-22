@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.banners.models import Banner
+from apps.common.security import SafeImageField
 
 
 class BannerListSerializer(serializers.ModelSerializer):
@@ -28,7 +29,7 @@ class BannerDetailSerializer(serializers.ModelSerializer):
 
 class BannerCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255)
-    image = serializers.ImageField()
+    image = SafeImageField()
     url = serializers.URLField(required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False, default=True)
     sort_order = serializers.IntegerField(min_value=0, required=False, default=0)
@@ -36,7 +37,7 @@ class BannerCreateSerializer(serializers.Serializer):
 
 class BannerUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255, required=False)
-    image = serializers.ImageField(required=False)
+    image = SafeImageField(required=False)
     url = serializers.URLField(required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
     sort_order = serializers.IntegerField(min_value=0, required=False)

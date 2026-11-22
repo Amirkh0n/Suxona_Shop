@@ -8,10 +8,12 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.accounts import security
 from apps.accounts.exceptions import (
     AccountNotVerifiedError,
     InvalidCredentialsError,
 )
+from apps.accounts.models import User
 from apps.accounts.serializers import (
     LoginSerializer,
     RefreshTokenSerializer,
@@ -92,13 +94,21 @@ class LoginView(APIView):
     def post(self, request: Request) -> Response:
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data["phone"]
+
+        if security.is_locked(phone):
+            return Response(
+                {"detail": "Juda ko'p urinish. 15 daqiqadan so'ng qayta urinib ko'ring."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
 
         try:
             user = AuthenticateUserService.execute(
-                phone=serializer.validated_data["phone"],
+                phone=phone,
                 password=serializer.validated_data["password"],
             )
         except InvalidCredentialsError as exc:
+            security.register_failure(phone)
             return Response(
                 {"detail": str(exc)}, status=status.HTTP_401_UNAUTHORIZED
             )
@@ -111,6 +121,7 @@ class LoginView(APIView):
                 {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        security.clear_failures(phone)
         refresh = RefreshToken.for_user(user)
         return Response(
             {"access": str(refresh.access_token), "refresh": str(refresh)},
@@ -152,16 +163,44 @@ class RefreshTokenView(APIView):
         serializer = RefreshTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        invalid = Response(
+            {"detail": "Invalid or expired refresh token."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
         try:
-            refresh = RefreshToken(serializer.validated_data["refresh"])
-            access = refresh.access_token
+            old = RefreshToken(serializer.validated_data["refresh"])  # rejects blacklisted
+            user = User.objects.filter(pk=old["user_id"], is_active=True).first()
+            if user is None:
+                return invalid
+            # Rotation: the presented token is burned, a fresh pair is issued.
+            try:
+                old.blacklist()
+            except TokenError:
+                return invalid
         except TokenError:
-            return Response(
-                {"detail": "Invalid or expired refresh token."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            return invalid
 
+        fresh = RefreshToken.for_user(user)
         return Response(
-            {"access": str(access), "refresh": str(refresh)},
+            {"access": str(fresh.access_token), "refresh": str(fresh)},
             status=status.HTTP_200_OK,
         )
+
+
+@extend_schema(tags=["Auth"])
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        summary="Revoke a refresh token (log out)",
+        request=RefreshTokenSerializer,
+        responses={204: None},
+    )
+    def post(self, request: Request) -> Response:
+        serializer = RefreshTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            RefreshToken(serializer.validated_data["refresh"]).blacklist()
+        except TokenError:
+            pass  # already invalid: nothing to revoke
+        return Response(status=status.HTTP_204_NO_CONTENT)

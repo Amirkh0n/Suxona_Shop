@@ -1,6 +1,17 @@
+from django.contrib.auth.password_validation import validate_password as _django_validate
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from apps.accounts.models import User
+
+
+def validate_new_password(value: str, user=None) -> str:
+    """Apply the project's AUTH_PASSWORD_VALIDATORS (common/numeric/similar passwords)."""
+    try:
+        _django_validate(value, user)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError(list(exc.messages)) from exc
+    return value
 
 
 class UserCompactSerializer(serializers.ModelSerializer):
@@ -34,6 +45,9 @@ class RegisterSerializer(serializers.Serializer):
     )
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+
+    def validate_password(self, value: str) -> str:
+        return validate_new_password(value)
 
 
 class LoginSerializer(serializers.Serializer):

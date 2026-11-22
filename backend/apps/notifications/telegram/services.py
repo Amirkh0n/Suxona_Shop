@@ -38,7 +38,7 @@ def _app(path: str) -> str:
 
 
 def _admin(path: str) -> str:
-    return f"{settings.SITE_BASE_URL}/admin/{path}"
+    return f"{settings.SITE_BASE_URL}/{settings.ADMIN_URL}{path}"
 
 
 def _chat_id_for(user: User) -> str | None:

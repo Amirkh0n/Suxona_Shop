@@ -3,6 +3,7 @@ from rest_framework import serializers
 # Cross-app import: target the leaf module (not apps.accounts.serializers) to
 # keep the import graph acyclic. Do not change to the package __init__.
 from apps.accounts.serializers.user import UserCompactSerializer
+from apps.common.security import SafeImageField
 from apps.stores.models import Store, StoreReview
 
 
@@ -78,8 +79,8 @@ class StoreUpdateSerializer(serializers.Serializer):
         required=False,
         allow_blank=True,
     )
-    logo = serializers.ImageField(required=False)
-    banner = serializers.ImageField(required=False)
+    logo = SafeImageField(required=False)
+    banner = SafeImageField(required=False)
     min_order_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0, required=False
     )

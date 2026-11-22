@@ -52,6 +52,9 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    // Revoke the refresh token server-side (best effort), then forget it locally.
+    const refresh = tokenStore.getRefresh();
+    if (refresh) authApi.logout(refresh).catch(() => {});
     tokenStore.clear();
     setUser(null);
     setMyStore(null);

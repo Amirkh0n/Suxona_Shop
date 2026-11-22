@@ -4,6 +4,7 @@ set -e
 
 echo "==> migrate"
 python manage.py migrate --noinput
+python manage.py createcachetable
 
 echo "==> staff roles"
 python manage.py setup_admin_roles

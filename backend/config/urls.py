@@ -36,7 +36,7 @@ urlpatterns = [
     path("healthz", healthz, name="healthz"),
     path("share/products/<int:product_id>", share_product, name="share-product"),
     path("share/stores/<int:store_id>", share_store, name="share-store"),
-    path("admin/", admin.site.urls),
+    path(settings.ADMIN_URL, admin.site.urls),
     path("api/v1/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.stores.urls")),
     path("api/v1/", include("apps.products.urls")),

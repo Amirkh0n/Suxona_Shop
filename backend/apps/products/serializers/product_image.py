@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.common.security import SafeImageField
 from apps.products.models import ProductImage
 
 
@@ -11,7 +12,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class ProductImageUploadSerializer(serializers.Serializer):
-    image = serializers.ImageField()
+    image = SafeImageField()
     is_primary = serializers.BooleanField(required=False, default=False)
     sort_order = serializers.IntegerField(min_value=0, required=False, default=0)
 

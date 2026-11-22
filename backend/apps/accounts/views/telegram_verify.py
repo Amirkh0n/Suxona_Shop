@@ -1,3 +1,5 @@
+import hmac
+
 from django.conf import settings
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
@@ -56,7 +58,7 @@ class TelegramVerifyView(APIView):
             )
 
         provided = request.headers.get(_SECRET_HEADER, "")
-        if provided != expected:
+        if not hmac.compare_digest(provided.encode(), expected.encode()):
             return Response(
                 {"detail": "Forbidden."},
                 status=status.HTTP_403_FORBIDDEN,

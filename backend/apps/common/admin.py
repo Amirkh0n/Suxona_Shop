@@ -10,6 +10,8 @@ from __future__ import annotations
 from django.contrib import admin
 from django.utils.html import format_html
 
+from apps.common.security import csv_safe
+
 # --- Status badge colors -------------------------------------------------
 
 ORDER_STATUS_COLORS = {
@@ -99,14 +101,7 @@ def render_image_preview(image_field, max_height: int = 240) -> str:
 
 # --- CSV export --------------------------------------------------------------
 
-_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
-
-
-def _csv_safe(value) -> str:
-    """Neutralise spreadsheet formulas (CSV injection): user-controlled text like a
-    store name ``=HYPERLINK(...)`` must not execute when an admin opens the file."""
-    text = "" if value is None else str(value)
-    return "'" + text if text.startswith(_FORMULA_PREFIXES) else text
+_csv_safe = csv_safe
 
 
 class CsvExportMixin:
