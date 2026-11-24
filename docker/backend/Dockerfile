@@ -11,8 +11,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app/backend
 
 # Dependencies first: this layer is cached until pyproject.toml changes.
-COPY backend/pyproject.toml backend/.python-version ./
-RUN uv sync --no-dev --no-install-project
+COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
+# --frozen: install exactly the versions in uv.lock (reproducible builds).
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY backend/ ./
 
