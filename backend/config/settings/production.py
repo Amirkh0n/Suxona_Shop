@@ -58,12 +58,31 @@ SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
 # Rate limits and login lock-outs live in the cache. Per-process memory would give
-# every gunicorn worker (and instance) its own counters, multiplying every limit, so
-# use Redis when available, else a shared database table (`createcachetable`).
+# every gunicorn worker its own counters, so share them. DJANGO_CACHE_BACKEND:
+#   db     (default) shared DB table; needs `python manage.py createcachetable`
+#   file   shared files in DJANGO_CACHE_DIR; no setup (single-host setups, PythonAnywhere)
+#   locmem per-process memory (counters are per worker; fine for one-worker hosts)
+# REDIS_URL, when set, wins over all of these (configured in base.py).
 if not os.environ.get("REDIS_URL"):
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-            "LOCATION": "django_cache",
+    _cache = os.environ.get("DJANGO_CACHE_BACKEND", "db").lower()
+    if _cache == "file":
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+                "LOCATION": os.environ.get("DJANGO_CACHE_DIR", "/tmp/suxonashop_cache"),
+            }
         }
-    }
+    elif _cache == "locmem":
+        CACHES = {
+            "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+        }
+    else:
+        CACHES = {
+            "default": {
+                "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+                "LOCATION": "django_cache",
+            }
+        }
+
+# A missing/stale collectstatic manifest must not turn admin and Swagger pages into 500s.
+WHITENOISE_MANIFEST_STRICT = False
