@@ -45,8 +45,20 @@ def _call(
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Any:
     url = f"{API_BASE}/bot{_token()}/{method}"
-    response = requests.post(url, json=payload or {}, timeout=timeout)
-    data = response.json()
+    try:
+        response = requests.post(url, json=payload or {}, timeout=timeout)
+        data = response.json()
+    except requests.RequestException as exc:
+        # Never let the exception carry the URL: it contains the bot token and would
+        # leak into logs, tracebacks and Sentry.
+        raise RuntimeError(
+            f"Telegram network error on {method}: {type(exc).__name__} "
+            "(host cannot reach api.telegram.org: proxy/firewall/allow-list?)"
+        ) from None
+    except ValueError:
+        raise RuntimeError(
+            f"Telegram returned a non-JSON answer on {method} (HTTP {response.status_code})"
+        ) from None
     if not data.get("ok"):
         raise RuntimeError(f"Telegram API error on {method}: {data}")
     return data["result"]
