@@ -1,7 +1,8 @@
 # PythonAnywhere'ga deploy (backend)
 
-> Faqat backend. Frontend Cloudflare Pages'da. PythonAnywhere free rejasida tashqi saytlarga
-> chiqish cheklangan (Telegram ruxsat etilgan, Cloudflare R2 yo'q) — rasmlar uchun diskni ishlating.
+> Faqat backend. Frontend Cloudflare Pages'da. PythonAnywhere free rejasida tashqariga faqat ruxsat etilgan ro'yxatdagi
+> saytlarga proksi orqali chiqiladi. `api.telegram.org` ro'yxatda bo'lsa ham ba'zi akkauntlarda proksi `503` qaytaradi —
+> unda `cloudflare/telegram-relay` (Cloudflare Worker) orqali yuboring (5-bo'lim).
 
 ## 1. Kod va muhit (Bash console)
 ```bash
@@ -82,4 +83,8 @@ Eng ko'p uchraydigan sabablar: `migrate` bajarilmagan (jadval yo'q); kesh jadval
 
 ## 5. Telegram webhook
 `SITE_BASE_URL` to'g'ri bo'lgach: `python manage.py set_telegram_webhook`.
+
+**`Tunnel connection failed: 503` chiqsa** (`curl https://api.telegram.org/bot<TOKEN>/getMe` ham shuni bersa) — server Telegram'ga
+chiqa olmayapti. `*.workers.dev` ruxsat etilgan, shuning uchun `cloudflare/telegram-relay/README.md` bo'yicha relay o'rnating va `.env` ga
+`TELEGRAM_API_BASE_URL` va `TELEGRAM_RELAY_KEY` ni yozing.
 Free reja: web app 3 oyda bir marta "Run until" tugmasini bosib uzaytirilishi kerak.
