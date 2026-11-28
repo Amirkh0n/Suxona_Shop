@@ -305,6 +305,20 @@ LOGGING = {
     },
 }
 
+# Hosts whose error log does not show stderr (e.g. PythonAnywhere): also write errors
+# (full tracebacks of every 500) to a file, e.g. DJANGO_LOG_FILE=/home/<user>/suxona-errors.log
+if os.environ.get("DJANGO_LOG_FILE"):
+    LOGGING["handlers"]["file"] = {
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": os.environ["DJANGO_LOG_FILE"],
+        "maxBytes": 2_000_000,
+        "backupCount": 3,
+        "formatter": "simple",
+        "level": "WARNING",
+    }
+    LOGGING["root"]["handlers"].append("file")
+    LOGGING["loggers"]["django"]["handlers"].append("file")
+
 # --- Cache (optional Redis) ---------------------------------------------------
 # Set REDIS_URL (e.g. redis://redis:6379/1) to share the cache between workers;
 # without it each process uses its own in-memory cache, which is fine for one box.
