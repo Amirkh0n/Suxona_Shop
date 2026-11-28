@@ -44,9 +44,10 @@ def _call(
     payload: dict[str, Any] | None = None,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> Any:
-    url = f"{API_BASE}/bot{_token()}/{method}"
+    url = f"{settings.TELEGRAM_API_BASE_URL or API_BASE}/bot{_token()}/{method}"
+    headers = {"X-Relay-Key": settings.TELEGRAM_RELAY_KEY} if settings.TELEGRAM_RELAY_KEY else {}
     try:
-        response = requests.post(url, json=payload or {}, timeout=timeout)
+        response = requests.post(url, json=payload or {}, headers=headers, timeout=timeout)
         data = response.json()
     except requests.RequestException as exc:
         # Never let the exception carry the URL: it contains the bot token and would

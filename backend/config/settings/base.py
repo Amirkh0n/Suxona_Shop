@@ -267,6 +267,10 @@ SIMPLE_JWT = {
 # --- Telegram bot / verification -----------------------------------------
 TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "SuxonaShopBot")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+# Hosts that cannot reach api.telegram.org directly (e.g. PythonAnywhere free) can send
+# through a relay (see cloudflare/telegram-relay): base URL of the relay + shared key.
+TELEGRAM_API_BASE_URL = os.environ.get("TELEGRAM_API_BASE_URL", "https://api.telegram.org").rstrip("/")
+TELEGRAM_RELAY_KEY = os.environ.get("TELEGRAM_RELAY_KEY", "")
 # Shared secret expected in the X-Telegram-Bot-Api-Secret-Token header on the
 # verification webhook. Leave blank to disable the header check (dev only).
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
